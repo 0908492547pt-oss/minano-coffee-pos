@@ -2998,6 +2998,77 @@ ON CONFLICT (id) DO NOTHING;</pre>
     <script>
         function posApp() {
             return {
+                // Tự động nhận diện key mới (sb_publishable_...) và key JWT cũ (eyJ...)
+buildSupabaseHeaders(extra = {}) {
+    const cleanKey = (this.shopConfig.supabaseKey || '').trim();
+    const headers = {
+        'apikey': cleanKey,
+        'Content-Type': 'application/json',
+        ...extra
+    };
+    if (cleanKey.startsWith('eyJ')) {
+        headers['Authorization'] = `Bearer ${cleanKey}`;
+    }
+    return headers;
+},
+
+// Đẩy toàn bộ dữ liệu POS, Sơ đồ bàn, KDS, Tích điểm & Hàng đợi in bill lên Supabase
+async pushToSupabaseCloud(silent = true) {
+    if (!this.shopConfig.supabaseEnabled || !this.shopConfig.supabaseUrl || !this.shopConfig.supabaseKey) return;
+    const baseUrl = this.shopConfig.supabaseUrl.trim().replace(/\/+$/, '');
+    try {
+        const res = await fetch(`${baseUrl}/rest/v1/minano_pos_sync?on_conflict=id`, {
+            method: 'POST',
+            headers: this.buildSupabaseHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+            body: JSON.stringify({
+                id: 1,
+                payload: this.getSerializableState(),
+                updated_at: new Date().toISOString()
+            })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        this.cloudStatus = 'Đã đồng bộ Cloud ' + new Date().toTimeString().slice(0, 8);
+        if (!silent) this.addToast('Đồng Bộ Thành Công', 'Dữ liệu đã được lưu lên Supabase Cloud!', 'success');
+    } catch (err) {
+        this.cloudStatus = 'Lỗi đồng bộ Cloud';
+        if (!silent) this.addToast('Lỗi Kết Nối Supabase', err.message, 'error');
+    }
+},
+
+// Kéo dữ liệu mới nhất từ Supabase về thiết bị & tự bật hộp thoại in bill trên máy tính
+async pullFromSupabaseCloud(silent = true) {
+    if (!this.shopConfig.supabaseEnabled || !this.shopConfig.supabaseUrl || !this.shopConfig.supabaseKey) return;
+    const baseUrl = this.shopConfig.supabaseUrl.trim().replace(/\/+$/, '');
+    try {
+        const res = await fetch(`${baseUrl}/rest/v1/minano_pos_sync?id=eq.1&select=payload,updated_at`, {
+            method: 'GET',
+            headers: this.buildSupabaseHeaders()
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const rows = await res.json();
+        const remote = rows?.[0]?.payload;
+        if (remote && typeof remote === 'object' && Object.keys(remote).length > 0) {
+            this.isInitializing = true;
+            this.applyLoadedState(remote);
+            this.isInitializing = false;
+
+            // Nếu thiết bị này là Máy Tính Thu Ngân (PC_CASHIER) và có lệnh in từ điện thoại gửi sang:
+            if (this.deviceRole === 'PC_CASHIER' && Array.isArray(this.printQueue)) {
+                const pendingJob = this.printQueue.find(j => j.status === 'PENDING');
+                if (pendingJob) {
+                    pendingJob.status = 'PRINTED';
+                    this.selectedOrderReceipt = pendingJob.order;
+                    this.pushToSupabaseCloud(true);
+                    setTimeout(() => window.print(), 500);
+                }
+            }
+        }
+        this.cloudStatus = 'Online • ' + new Date().toTimeString().slice(0, 8);
+        if (!silent) this.addToast('Đã Tải Dữ Liệu Cloud', 'Dữ liệu mới nhất từ Supabase đã được cập nhật!', 'success');
+    } catch (err) {
+        if (!silent) this.addToast('Lỗi Kéo Dữ Liệu', err.message, 'error');
+    }
+}
                 // Navigation & Sub-tabs
                 activeTab: 'pos',
                 invSubTab: 'stock',
@@ -3897,6 +3968,13 @@ ON CONFLICT (id) DO NOTHING;</pre>
                     this.saveState();
                     this.notify('Đã đặt lại dữ liệu gốc', 'Toàn bộ hệ thống đã khôi phục về dữ liệu mẫu ban đầu.', 'info');
                 },
+                                // Kéo dữ liệu ngay khi mở trang và lặp lại mỗi 5 giây
+if (this.shopConfig.supabaseEnabled && this.shopConfig.supabaseUrl && this.shopConfig.supabaseKey) {
+    this.pullFromSupabaseCloud(true);
+    setInterval(() => {
+        if (!this.isInitializing) this.pullFromSupabaseCloud(true);
+    }, 5000);
+}
 
                 // ==================== REMOTE PRINT BRIDGE (ĐIỆN THOẠI -> MÁY TÍNH) ====================
                 sendOrderToRemotePrint(orderObj) {
@@ -3958,6 +4036,11 @@ ON CONFLICT (id) DO NOTHING;</pre>
                     if (found) this.shopConfig.customColor = found.primary;
                     this.saveState();
                 },
+                                supabaseUrl: 'https://cousgmcipsruwznvmisd.supabase.co',
+supabaseKey: 'sb_publishable_Tmd8H1NDwnTFi4eAiXgNuQ_cH20OPTI',
+supabaseEnabled: true,
+deviceRole: 'PC_CASHIER', // Máy tính chọn PC_CASHIER, Điện thoại nhân viên chọn MOBILE_ORDER
+printPaperSize: '80mm'
 
                 applyCustomColor(hexColor) {
                     this.shopConfig.themeId = 'custom';
