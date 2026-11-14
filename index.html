@@ -2998,6 +2998,22 @@ ON CONFLICT (id) DO NOTHING;</pre>
     <script>
         function posApp() {
             return {
+                // Navigation & Sub-tabs
+                activeTab: 'pos',
+                invSubTab: 'stock',
+                cashbookFilter: 'ALL',
+                cashbookSearch: '',
+                reportSubTab: 'overview',
+                hrSubTab: 'schedule',
+                userSubTab: 'accounts',
+
+                // Device Role & Remote Printing (Điện thoại gửi in -> Máy tính thu ngân in)
+                deviceMode: 'PC_PRINTER',
+                autoPrintOnPC: true,
+                printerPaperSize: 'k80',
+                remotePrintQueue: [],
+                broadcastChannel: null,
+                syncTimer: null,
                 // Tự động nhận diện key mới (sb_publishable_...) và key JWT cũ (eyJ...)
 buildSupabaseHeaders(extra = {}) {
     const cleanKey = (this.shopConfig.supabaseKey || '').trim();
@@ -3069,22 +3085,6 @@ async pullFromSupabaseCloud(silent = true) {
         if (!silent) this.addToast('Lỗi Kéo Dữ Liệu', err.message, 'error');
     }
 }
-                // Navigation & Sub-tabs
-                activeTab: 'pos',
-                invSubTab: 'stock',
-                cashbookFilter: 'ALL',
-                cashbookSearch: '',
-                reportSubTab: 'overview',
-                hrSubTab: 'schedule',
-                userSubTab: 'accounts',
-
-                // Device Role & Remote Printing (Điện thoại gửi in -> Máy tính thu ngân in)
-                deviceMode: 'PC_PRINTER',
-                autoPrintOnPC: true,
-                printerPaperSize: 'k80',
-                remotePrintQueue: [],
-                broadcastChannel: null,
-                syncTimer: null,
                 // Backend Server / Supabase / MySQL API Configuration
                 // Bạn có thể dán sẵn URL và Anon Key vào 2 dòng dưới đây trước khi up lên GitHub Pages:
                 apiConfig: {
@@ -3516,7 +3516,15 @@ async pullFromSupabaseCloud(silent = true) {
                 },
 
                 // ==================== INITIALIZATION & MULTI-LAYER SYNC ====================
-                initApp() {
+                initApp() 
+                                // Kéo dữ liệu ngay khi mở trang và lặp lại mỗi 5 giây
+if (this.shopConfig.supabaseEnabled && this.shopConfig.supabaseUrl && this.shopConfig.supabaseKey) {
+    this.pullFromSupabaseCloud(true);
+    setInterval(() => {
+        if (!this.isInitializing) this.pullFromSupabaseCloud(true);
+    }, 5000);
+}
+                                {
                     this.isInitializing = true;
                     if (window.innerWidth < 768) {
                         this.deviceMode = 'MOBILE_ORDER';
@@ -3968,13 +3976,6 @@ async pullFromSupabaseCloud(silent = true) {
                     this.saveState();
                     this.notify('Đã đặt lại dữ liệu gốc', 'Toàn bộ hệ thống đã khôi phục về dữ liệu mẫu ban đầu.', 'info');
                 },
-                                // Kéo dữ liệu ngay khi mở trang và lặp lại mỗi 5 giây
-if (this.shopConfig.supabaseEnabled && this.shopConfig.supabaseUrl && this.shopConfig.supabaseKey) {
-    this.pullFromSupabaseCloud(true);
-    setInterval(() => {
-        if (!this.isInitializing) this.pullFromSupabaseCloud(true);
-    }, 5000);
-}
 
                 // ==================== REMOTE PRINT BRIDGE (ĐIỆN THOẠI -> MÁY TÍNH) ====================
                 sendOrderToRemotePrint(orderObj) {
@@ -4036,11 +4037,6 @@ if (this.shopConfig.supabaseEnabled && this.shopConfig.supabaseUrl && this.shopC
                     if (found) this.shopConfig.customColor = found.primary;
                     this.saveState();
                 },
-                                supabaseUrl: 'https://cousgmcipsruwznvmisd.supabase.co',
-supabaseKey: 'sb_publishable_Tmd8H1NDwnTFi4eAiXgNuQ_cH20OPTI',
-supabaseEnabled: true,
-deviceRole: 'PC_CASHIER', // Máy tính chọn PC_CASHIER, Điện thoại nhân viên chọn MOBILE_ORDER
-printPaperSize: '80mm'
 
                 applyCustomColor(hexColor) {
                     this.shopConfig.themeId = 'custom';
