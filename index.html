@@ -618,7 +618,7 @@
                                     <div class="flex-1">
                                         <div class="flex items-center gap-1.5">
                                             <h4 class="font-bold text-xs sm:text-sm text-slate-800" x-text="item.name"></h4>
-                                            <span x-show="item.sentToKitchen" class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[9px] font-bold">Đã báo quầy</span>
+                                            <span x-show="item.sentToKitchen" class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 text-[9px] font-bold">Đã báo bếp</span>
                                         </div>
                                         <p class="text-xs font-semibold text-slate-500" x-text="formatMoney(getCartItemUnitPrice(item)) + ' / ly'"></p>
                                     </div>
@@ -717,7 +717,7 @@
                         <div class="grid grid-cols-2 gap-2 pt-1">
                             <button type="button" @click="saveTableAndSendToKitchen()" :disabled="cart.length === 0"
                                     class="py-2.5 px-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow disabled:opacity-40 flex items-center justify-center gap-1.5">
-                                <i class="fa-solid fa-fire-burner"></i> Lưu Bàn & Báo Quầy
+                                <i class="fa-solid fa-fire-burner"></i> Lưu Bàn & Báo Bếp
                             </button>
                             <button type="button" @click="checkoutOrder(true)" :disabled="cart.length === 0"
                                     title="Thanh toán và gửi lệnh in trực tiếp từ điện thoại sang máy tính thu ngân"
@@ -891,7 +891,7 @@
                     <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400">
                         <i class="fa-solid fa-mug-hot text-4xl mb-2 opacity-40 block"></i>
                         <p class="font-bold text-sm text-slate-600">Hiện không có phiếu pha chế nào trong danh sách này</p>
-                        <p class="text-xs mt-1">Khi thu ngân bấm "Lưu Bàn & Báo Quầy" hoặc thanh toán đơn, phiếu sẽ xuất hiện ngay lập tức</p>
+                        <p class="text-xs mt-1">Khi thu ngân bấm "Lưu Bàn & Báo Bếp" hoặc thanh toán đơn, phiếu sẽ xuất hiện ngay lập tức</p>
                     </div>
                 </template>
 
@@ -2311,11 +2311,11 @@
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div>
-                                <h3 class="font-extrabold text-base text-slate-800"><i class="fa-solid fa-cloud-arrow-up theme-text mr-1.5"></i> 5. Kết Nối Cloud Database (Supabase / MySQL) & Cầu Nối In Bill</h3>
-                                <p class="text-xs text-slate-500">Đồng bộ đơn hàng, KDS pha chế, sơ đồ bàn và hàng đợi in bill từ điện thoại sang máy tính qua Internet</p>
+                                <h3 class="font-extrabold text-base text-slate-800"><i class="fa-solid fa-cloud-arrow-up theme-text mr-1.5"></i> 5. Kết Nối Cloud Database (Supabase & GitHub Pages) & Cầu Nối In Bill</h3>
+                                <p class="text-xs text-slate-500">Đồng bộ đơn hàng, KDS pha chế, sơ đồ bàn, kho, lương và hàng đợi in bill từ điện thoại sang máy tính qua Internet</p>
                             </div>
                             <label class="flex items-center gap-2 text-xs font-extrabold cursor-pointer">
-                                <input type="checkbox" x-model="apiConfig.enabled" class="w-4 h-4 rounded text-emerald-600">
+                                <input type="checkbox" x-model="apiConfig.enabled" @change="saveState()" class="w-4 h-4 rounded text-emerald-600">
                                 <span>Bật Đồng Bộ Online</span>
                             </label>
                         </div>
@@ -2323,7 +2323,7 @@
                             <div>
                                 <label class="block font-bold text-slate-600 mb-1">Nền Tảng Cloud / Server</label>
                                 <select x-model="apiConfig.provider" class="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-bold bg-slate-50 theme-ring">
-                                    <option value="SUPABASE">⚡ Supabase Cloud (Khuyên dùng - Miễn phí)</option>
+                                    <option value="SUPABASE">⚡ Supabase Cloud + GitHub Pages (Khuyên dùng - Miễn phí)</option>
                                     <option value="CUSTOM_MYSQL">🖥️ Custom Server (Node.js / PHP + MySQL)</option>
                                 </select>
                             </div>
@@ -2342,6 +2342,18 @@
                                 <input type="text" x-model="apiConfig.apiKey" placeholder="Dán mã anon public key từ Supabase Project Settings -> API..."
                                        class="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono">
                             </div>
+                        </div>
+
+                        <!-- Quick Export index.html for GitHub Pages -->
+                        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                            <div class="text-emerald-900">
+                                <p class="font-extrabold"><i class="fa-brands fa-github mr-1"></i> Xuất Tệp <code class="bg-white px-1.5 py-0.5 rounded border border-emerald-200">index.html</code> Đã Tích Hợp Sẵn Key Supabase</p>
+                                <p class="text-[11px] text-emerald-700">Tải file <code>index.html</code> này về và tải thẳng lên GitHub Pages — mọi điện thoại/máy tính mở link sẽ tự động kết nối Supabase ngay!</p>
+                            </div>
+                            <button type="button" @click="downloadGithubIndexHtml()"
+                                    class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold whitespace-nowrap shadow-xs">
+                                <i class="fa-solid fa-download mr-1"></i> Tải index.html Cho GitHub
+                            </button>
                         </div>
 
                         <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
@@ -3003,6 +3015,7 @@ ON CONFLICT (id) DO NOTHING;</pre>
                 broadcastChannel: null,
                 syncTimer: null,
                 // Backend Server / Supabase / MySQL API Configuration
+                // Bạn có thể dán sẵn URL và Anon Key vào 2 dòng dưới đây trước khi up lên GitHub Pages:
                 apiConfig: {
                     provider: 'SUPABASE',
                     enabled: false,
@@ -3010,6 +3023,7 @@ ON CONFLICT (id) DO NOTHING;</pre>
                     apiKey: '',
                     pollIntervalSec: 3
                 },
+                lastSyncedRevision: 0,
                 showMysqlSchemaModal: false,
 
                 // Persistent Storage State
@@ -3519,6 +3533,7 @@ ON CONFLICT (id) DO NOTHING;</pre>
 
                 getSerializableState() {
                     return JSON.parse(JSON.stringify({
+                        _revision: this.lastSyncedRevision || Date.now(),
                         shopConfig: this.shopConfig,
                         users: this.users,
                         ingredients: this.ingredients,
@@ -3540,6 +3555,9 @@ ON CONFLICT (id) DO NOTHING;</pre>
 
                 saveState(skipBroadcast = false) {
                     const STORAGE_KEY = 'minano_pos_v6_full';
+                    if (!skipBroadcast) {
+                        this.lastSyncedRevision = Date.now();
+                    }
                     const payload = this.getSerializableState();
                     const serialized = JSON.stringify(payload);
                     try { window.localStorage.setItem(STORAGE_KEY, serialized); } catch (e) {}
@@ -3672,6 +3690,7 @@ ON CONFLICT (id) DO NOTHING;</pre>
                 },
 
                 applyLoadedState(data) {
+                    if (data._revision) this.lastSyncedRevision = Math.max(this.lastSyncedRevision, Number(data._revision));
                     if (data.shopConfig) this.shopConfig = { ...this.shopConfig, ...data.shopConfig };
                     if (Array.isArray(data.users) && data.users.length) this.users = data.users;
                     if (Array.isArray(data.ingredients)) this.ingredients = data.ingredients;
@@ -3691,27 +3710,10 @@ ON CONFLICT (id) DO NOTHING;</pre>
                     if (Array.isArray(data.kdsTickets)) this.kdsTickets = data.kdsTickets;
                     if (Array.isArray(data.customers)) this.customers = data.customers;
                     if (Array.isArray(data.remotePrintQueue)) this.remotePrintQueue = data.remotePrintQueue;
-                    if (data.apiConfig) this.apiConfig = { ...this.apiConfig, ...data.apiConfig };
-                },
-
-                seedDefaultTables(silent = false) {
-                    this.tables = [
-                        { id: 't1', name: 'Bàn 01', zone: 'Tầng Trệt', status: 'AVAILABLE', currentCart: [], openedAt: '' },
-                        { id: 't2', name: 'Bàn 02', zone: 'Tầng Trệt', status: 'AVAILABLE', currentCart: [], openedAt: '' },
-                        { id: 't3', name: 'Bàn 03', zone: 'Tầng Trệt', status: 'OCCUPIED', openedAt: '14:20', currentCart: [
-                            { cartItemId: 'seed_c1', id: 'p2', name: 'Cà Phê Sữa Đá Minano', price: 25000, qty: 2, size: 'M', topping: '', sugarIce: '100% Đường/Đá', note: '', sentToKitchen: true }
-                        ]},
-                        { id: 't4', name: 'Bàn 04', zone: 'Tầng Trệt', status: 'AVAILABLE', currentCart: [], openedAt: '' },
-                        { id: 't5', name: 'Bàn 05', zone: 'Phòng Lạnh', status: 'READY', openedAt: '14:35', currentCart: [
-                            { cartItemId: 'seed_c2', id: 'p4', name: 'Trà Đào Cam Sả', price: 35000, qty: 1, size: 'L', topping: 'Thạch đào / Dừa', sugarIce: '70% Đường, Ít đá', note: '', sentToKitchen: true }
-                        ]},
-                        { id: 't6', name: 'Bàn 06', zone: 'Phòng Lạnh', status: 'AVAILABLE', currentCart: [], openedAt: '' },
-                        { id: 't7', name: 'Bàn 07', zone: 'Sân Thượng', status: 'AVAILABLE', currentCart: [], openedAt: '' },
-                        { id: 't8', name: 'Bàn 08', zone: 'Khu Sân Vườn', status: 'AVAILABLE', currentCart: [], openedAt: '' }
-                    ];
-                    if (!silent) {
-                        this.saveState();
-                        this.notify('Đã khởi tạo sơ đồ bàn', 'Đã tạo sẵn 8 bàn mẫu tại các khu vực.', 'success');
+                    if (data.apiConfig) {
+                        const keepUrl = this.apiConfig.endpointUrl && !data.apiConfig.endpointUrl ? this.apiConfig.endpointUrl : data.apiConfig.endpointUrl;
+                        const keepKey = this.apiConfig.apiKey && !data.apiConfig.apiKey ? this.apiConfig.apiKey : data.apiConfig.apiKey;
+                        this.apiConfig = { ...this.apiConfig, ...data.apiConfig, endpointUrl: keepUrl, apiKey: keepKey };
                     }
                 },
 
@@ -3745,7 +3747,7 @@ ON CONFLICT (id) DO NOTHING;</pre>
                             });
                         }
                     } catch (e) {
-                        // Silently ignore offline network errors so POS keeps working 100% offline
+                        // Offline fallback
                     }
                 },
 
@@ -3781,193 +3783,120 @@ ON CONFLICT (id) DO NOTHING;</pre>
                         }
 
                         if (cloudState) {
-                            this.isInitializing = true;
-                            this.applyLoadedState(cloudState);
-                            this.isInitializing = false;
-                            this.saveState(true);
-                            this.checkIncomingRemotePrintJobs();
-                            if (!silent) this.notify('Đã đồng bộ Cloud!', 'Dữ liệu mới nhất từ Supabase đã được cập nhật.', 'success');
+                            const cloudRev = Number(cloudState._revision || 0);
+                            if (!silent || cloudRev > this.lastSyncedRevision) {
+                                this.isInitializing = true;
+                                this.applyLoadedState(cloudState);
+                                this.isInitializing = false;
+                                this.saveState(true);
+                                this.checkIncomingRemotePrintJobs();
+                                if (!silent) this.notify('Đã đồng bộ Cloud!', 'Dữ liệu mới nhất từ Supabase đã được cập nhật.', 'success');
+                            }
                         } else if (!silent) {
+                            await this.pushToBackendApi(this.getSerializableState());
                             this.notify('Kết nối thành công!', 'Đã kết nối Supabase và đẩy dữ liệu hiện tại lên Cloud.', 'success');
                         }
                     } catch (e) {
-                        if (!silent) this.notify('Lỗi kết nối Cloud API', 'Kiểm tra lại Supabase URL, Anon Key hoặc bảng minano_pos_sync.', 'error');
+                        if (!silent) this.notify('Lỗi kết nối Cloud API', 'Kiểm tra lại Supabase URL, Anon Key hoặc đã chạy lệnh SQL tạo bảng minano_pos_sync chưa.', 'error');
                     }
                 },
 
-                async syncFromBackendApi(silent = false) {
-                    if (!this.apiConfig.endpointUrl) return;
-                    try {
-                        const res = await fetch(this.apiConfig.endpointUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'Bearer ' + (this.apiConfig.apiKey || '')
-                            },
-                            body: JSON.stringify({ action: 'PULL' })
-                        });
-                        const data = await res.json();
-                        if (data && data.state) {
-                            this.isInitializing = true;
-                            this.applyLoadedState(data.state);
-                            this.isInitializing = false;
-                            this.saveState(true);
-                            this.checkIncomingRemotePrintJobs();
-                            if (!silent) this.notify('Đã đồng bộ Server', 'Dữ liệu mới nhất từ MySQL Server đã được cập nhật.', 'success');
-                        }
-                    } catch (e) {
-                        if (!silent) this.notify('Không kết nối được API Server', 'Vui lòng kiểm tra URL backend hoặc mạng LAN nội bộ.', 'warning');
+                downloadGithubIndexHtml() {
+                    let htmlSource = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+                    if (this.apiConfig.endpointUrl && this.apiConfig.apiKey) {
+                        const bakedConfig = JSON.stringify({
+                            provider: 'SUPABASE',
+                            enabled: true,
+                            endpointUrl: this.apiConfig.endpointUrl.trim(),
+                            apiKey: this.apiConfig.apiKey.trim(),
+                            pollIntervalSec: Number(this.apiConfig.pollIntervalSec || 3)
+                        }, null, 20);
+                        htmlSource = htmlSource.replace(
+                            /apiConfig:\s*\{[\s\S]*?pollIntervalSec:\s*\d+\s*\}/,
+                            `apiConfig: ${bakedConfig}`
+                        );
                     }
+                    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'index.html';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.notify('Đã tải tệp index.html!', 'Bạn hãy upload tệp index.html này lên GitHub Repository để chạy online.', 'success');
                 },
 
                 async testBackendConnection() {
-                if (!this.shopConfig.supabaseUrl || !this.shopConfig.supabaseKey) {
-                    return this.notify('Thiếu URL hoặc Key', 'Vui lòng nhập đầy đủ Supabase Project URL và Anon/Publishable Key.', 'warning');
-                }
-                this.notify('Đang kết nối...', 'Đang kiểm tra kết nối tới Supabase Cloud...', 'info');
-                
-                const cleanUrl = this.shopConfig.supabaseUrl.trim().replace(/\/+$/, '');
-                const apiKey = this.shopConfig.supabaseKey.trim();
-
-                try {
-                    const res = await fetch(`${cleanUrl}/rest/v1/minano_pos_sync?id=eq.1&select=*`, {
-                        method: 'GET',
-                        headers: {
-                            'apikey': apiKey,
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!res.ok) {
-                        const errText = await res.text();
-                        throw new Error(`HTTP ${res.status}: ${errText}`);
+                    if (!this.apiConfig.endpointUrl) {
+                        return this.notify('Thiếu URL API', 'Vui lòng nhập Supabase Project URL.', 'warning');
                     }
+                    this.apiConfig.enabled = true;
+                    this.notify('Đang kết nối...', 'Đang kiểm tra kết nối tới Supabase Cloud...', 'info');
+                    await this.syncFromBackendApi(false);
+                    this.saveState(true);
+                },
 
-                    const rows = await res.json();
-                    this.notify('Kết Nối Thành Công!', 'Đã thông luồng với cơ sở dữ liệu Supabase Cloud!', 'success');
-                    
-                    // Thực hiện đẩy dữ liệu hiện tại lên ngay lập tức sau khi thông luồng
-                    await this.pushToSupabaseCloud();
-                } catch (err) {
-                    console.error('Supabase Error:', err);
-                    this.notify('Lỗi Kết Nối Supabase', err.message || 'Không thể kết nối tới Supabase!', 'error');
-                }
-            },
+                manualSave() {
+                    this.saveState();
+                    this.notify('Đã lưu dữ liệu', 'Toàn bộ dữ liệu quán đã được lưu an toàn.', 'success');
+                },
 
-            async pushToSupabaseCloud() {
-                if (!this.shopConfig.cloudSyncEnabled || !this.shopConfig.supabaseUrl || !this.shopConfig.supabaseKey) return;
-                const cleanUrl = this.shopConfig.supabaseUrl.trim().replace(/\/+$/, '');
-                const apiKey = this.shopConfig.supabaseKey.trim();
+                exportBackupJson() {
+                    const dataStr = JSON.stringify(this.getSerializableState(), null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const dateStamp = new Date().toISOString().slice(0, 10);
+                    a.href = url;
+                    a.download = `Minano_Coffee_Backup_${dateStamp}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.notify('Đã xuất file sao lưu', 'Tệp dữ liệu .JSON đã được tải về máy.', 'success');
+                },
 
-                try {
-                    await fetch(`${cleanUrl}/rest/v1/minano_pos_sync?id=eq.1`, {
-                        method: 'PATCH',
-                        headers: {
-                            'apikey': apiKey,
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'return=minimal'
-                        },
-                        body: JSON.stringify({
-                            payload: this.getSerializableState(),
-                            updated_at: new Date().toISOString()
-                        })
-                    });
-                } catch (e) {
-                    console.warn('Lỗi đẩy dữ liệu lên Supabase:', e);
-                }
-            },
-
-            async syncFromSupabaseCloud(isBackground = true) {
-                if (!this.shopConfig.cloudSyncEnabled || !this.shopConfig.supabaseUrl || !this.shopConfig.supabaseKey) return;
-                const cleanUrl = this.shopConfig.supabaseUrl.trim().replace(/\/+$/, '');
-                const apiKey = this.shopConfig.supabaseKey.trim();
-
-                try {
-                    const res = await fetch(`${cleanUrl}/rest/v1/minano_pos_sync?id=eq.1&select=*`, {
-                        method: 'GET',
-                        headers: {
-                            'apikey': apiKey,
-                            'Authorization': `Bearer ${apiKey}`,
-                            'Content-Type': 'application/json'
+                importBackupJson(event) {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const parsed = JSON.parse(e.target.result);
+                            if (parsed && typeof parsed === 'object') {
+                                this.isInitializing = true;
+                                this.applyLoadedState(parsed);
+                                this.isInitializing = false;
+                                this.saveState();
+                                this.notify('Khôi phục thành công', 'Dữ liệu đã được nạp từ file sao lưu JSON.', 'success');
+                            } else {
+                                this.notify('File không hợp lệ', 'Cấu trúc file JSON không đúng định dạng.', 'error');
+                            }
+                        } catch (err) {
+                            this.notify('Lỗi đọc file', 'Không thể đọc tệp JSON này.', 'error');
                         }
-                    });
-                    if (!res.ok) return;
-                    const rows = await res.json();
-                    if (rows && rows.length > 0 && rows[0].payload) {
-                        const remoteState = rows[0].payload;
-                        this.isInitializing = true;
-                        this.applyLoadedState(remoteState);
-                        this.isInitializing = false;
-                    }
-                } catch (e) {
-                    if (!isBackground) console.warn('Lỗi đồng bộ dữ liệu từ Supabase:', e);
-                }
-            },
+                        event.target.value = '';
+                    };
+                    reader.readAsText(file);
+                },
 
-            manualSave() {
-                this.saveState();
-                this.pushToSupabaseCloud();
-                this.notify('Đã lưu dữ liệu', 'Toàn bộ dữ liệu quán đã được lưu an toàn và đồng bộ Cloud.', 'success');
-            },
+                confirmResetAllData() {
+                    this.showResetConfirmModal = true;
+                },
 
-            exportBackupJson() {
-                const dataStr = JSON.stringify(this.getSerializableState(), null, 2);
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                const dateStamp = new Date().toISOString().slice(0, 10);
-                a.href = url;
-                a.download = `Minano_Coffee_Backup_${dateStamp}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                this.notify('Đã xuất file sao lưu', 'Tệp dữ liệu .JSON đã được tải về máy.', 'success');
-            },
-
-            importBackupJson(event) {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const parsed = JSON.parse(e.target.result);
-                        if (parsed && typeof parsed === 'object') {
-                            this.isInitializing = true;
-                            this.applyLoadedState(parsed);
-                            this.isInitializing = false;
-                            this.saveState();
-                            this.pushToSupabaseCloud();
-                            this.notify('Khôi phục thành công', 'Dữ liệu đã được nạp từ file sao lưu JSON.', 'success');
-                        } else {
-                            this.notify('File không hợp lệ', 'Cấu trúc file JSON không đúng định dạng.', 'error');
-                        }
-                    } catch (err) {
-                        this.notify('Lỗi đọc file', 'Không thể đọc tệp JSON này.', 'error');
-                    }
-                    event.target.value = '';
-                };
-                reader.readAsText(file);
-            },
-
-            confirmResetAllData() {
-                this.showResetConfirmModal = true;
-            },
-
-            executeResetAllData() {
-                this.showResetConfirmModal = false;
-                try { window.localStorage.removeItem('minano_pos_v6_full'); } catch (e) {}
-                try { window.sessionStorage.removeItem('minano_pos_v6_full'); } catch (e) {}
-                window.name = '';
-                this.isInitializing = true;
-                this.seedInitialData();
-                this.isInitializing = false;
-                this.saveState();
-                this.pushToSupabaseCloud();
-                this.notify('Đã đặt lại dữ liệu gốc', 'Toàn bộ hệ thống đã khôi phục về dữ liệu mẫu ban đầu.', 'info');
-            },
+                executeResetAllData() {
+                    this.showResetConfirmModal = false;
+                    try { window.localStorage.removeItem('minano_pos_v6_full'); } catch (e) {}
+                    try { window.sessionStorage.removeItem('minano_pos_v6_full'); } catch (e) {}
+                    window.name = '';
+                    this.isInitializing = true;
+                    this.seedInitialData();
+                    this.isInitializing = false;
+                    this.saveState();
+                    this.notify('Đã đặt lại dữ liệu gốc', 'Toàn bộ hệ thống đã khôi phục về dữ liệu mẫu ban đầu.', 'info');
+                },
 
                 // ==================== REMOTE PRINT BRIDGE (ĐIỆN THOẠI -> MÁY TÍNH) ====================
                 sendOrderToRemotePrint(orderObj) {
@@ -4243,6 +4172,23 @@ ON CONFLICT (id) DO NOTHING;</pre>
                     this.showTableTransferModal = false;
                     this.saveState();
                     this.notify('Chuyển / Gộp bàn thành công', `Đã chuyển toàn bộ món từ ${fromTbl.name} sang ${toTbl.name}.`, 'success');
+                },
+
+                seedDefaultTables(silent = false) {
+                    this.tables = [
+                        { id: 't1', name: 'Bàn 01', zone: 'Tầng Trệt', status: 'AVAILABLE', currentCart: [], openedAt: '' },
+                        { id: 't2', name: 'Bàn 02', zone: 'Tầng Trệt', status: 'AVAILABLE', currentCart: [], openedAt: '' },
+                        { id: 't3', name: 'Bàn 03', zone: 'Tầng Trệt', status: 'OCCUPIED', currentCart: [{ cartItemId: 'ci_demo1', id: 'p2', name: 'Cà Phê Sữa Đá Minano', price: 25000, qty: 2, size: 'M', topping: '', sugarIce: '100% Đường/Đá', note: '', sentToKitchen: true }], openedAt: '14:20' },
+                        { id: 't4', name: 'Bàn 04', zone: 'Tầng Trệt', status: 'AVAILABLE', currentCart: [], openedAt: '' },
+                        { id: 't5', name: 'Bàn 05', zone: 'Sân Thượng', status: 'AVAILABLE', currentCart: [], openedAt: '' },
+                        { id: 't6', name: 'Bàn 06', zone: 'Sân Thượng', status: 'AVAILABLE', currentCart: [], openedAt: '' },
+                        { id: 't7', name: 'Bàn 07', zone: 'Phòng Lạnh', status: 'AVAILABLE', currentCart: [], openedAt: '' },
+                        { id: 't8', name: 'Bàn 08', zone: 'Khu Sân Vườn', status: 'AVAILABLE', currentCart: [], openedAt: '' }
+                    ];
+                    if (!silent) {
+                        this.saveState();
+                        this.notify('Đã khởi tạo sơ đồ bàn', 'Đã nạp sẵn 8 bàn mẫu theo các khu vực phục vụ.', 'success');
+                    }
                 },
 
                 addNewTable() {
