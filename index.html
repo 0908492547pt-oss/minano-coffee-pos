@@ -188,12 +188,20 @@
     <!-- ==================== MAIN APP WORKSPACE ==================== -->
     <div x-show="currentUser" x-cloak class="min-h-screen flex flex-col">
         
-        <!-- TOP HEADER -->
+        <!-- TOP HEADER (COMPACT) -->
         <header class="shadow-md sticky top-0 z-40 no-print transition-all duration-300 theme-header">
-            <div class="max-w-[1600px] mx-auto px-3 sm:px-5 h-16 flex items-center justify-between gap-2">
-                <!-- Brand & Shop Name -->
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl shrink-0 backdrop-blur-sm">
+            <div class="px-3 sm:px-5 h-14 flex items-center justify-between gap-2">
+                <!-- Left: Mobile Sidebar Toggle + Brand -->
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <button @click="mobileSidebarOpen = !mobileSidebarOpen"
+                            class="lg:hidden p-2 rounded-xl bg-white/15 hover:bg-white/25 transition">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <button @click="sidebarCollapsed = !sidebarCollapsed" title="Thu gọn / Mở rộng thanh menu dọc"
+                            class="hidden lg:flex p-2 rounded-xl bg-white/15 hover:bg-white/25 transition">
+                        <i class="fa-solid" :class="sidebarCollapsed ? 'fa-indent' : 'fa-outdent'"></i>
+                    </button>
+                    <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-lg shrink-0 backdrop-blur-sm">
                         <i class="fa-solid fa-mug-hot"></i>
                     </div>
                     <div class="min-w-0">
@@ -201,21 +209,21 @@
                             <h1 class="font-extrabold text-sm sm:text-base truncate" x-text="shopConfig.name"></h1>
                             <span class="hidden xl:inline-block text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-semibold" x-text="currentThemeObj.name"></span>
                         </div>
-                        <p class="text-[11px] opacity-90 truncate" x-text="shopConfig.address + ' • ' + shopConfig.phone"></p>
+                        <p class="text-[10px] opacity-90 truncate hidden sm:block" x-text="shopConfig.address + ' • ' + shopConfig.phone"></p>
                     </div>
                 </div>
 
-                <!-- Right Controls: Save Status, Backup, Theme Picker, Fund Balance, Alerts, User & Check-out -->
-                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- Right Controls: Cloud Sync, Device Role, Save, Backup, Theme, Fund, Alerts, User -->
+                <div class="flex items-center gap-1.5 shrink-0">
                     <!-- Cloud Sync Status Pill -->
                     <button @click="pullFromSupabaseCloud(false)" title="Bấm để đồng bộ dữ liệu ngay từ Supabase Cloud"
                             class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition"
                             :class="shopConfig.supabaseEnabled ? 'bg-emerald-500/25 border-emerald-300/40 text-white hover:bg-emerald-500/35' : 'bg-white/10 border-white/20 text-white/80'">
                         <span class="w-2 h-2 rounded-full" :class="shopConfig.supabaseEnabled ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300'"></span>
-                        <span class="max-w-[130px] truncate" x-text="cloudStatus"></span>
+                        <span class="max-w-[120px] truncate" x-text="cloudStatus"></span>
                     </button>
 
-                    <!-- Device Role Switcher (PC Cashier Print vs Mobile Order) -->
+                    <!-- Device Role Switcher -->
                     <button @click="toggleDeviceRole()" title="Chuyển vai trò thiết bị: Máy tính nhận & in bill từ điện thoại / Điện thoại order từ xa"
                             class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition"
                             :class="deviceRole === 'PC_CASHIER' ? 'bg-amber-400/25 border-amber-200/50 text-amber-100' : 'bg-sky-400/25 border-sky-200/50 text-white'">
@@ -224,20 +232,19 @@
                         <span x-show="pendingPrintCount > 0" class="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[10px] font-extrabold animate-bounce" x-text="pendingPrintCount"></span>
                     </button>
                     
-                    <!-- Real-time Persistent Save Indicator & Manual Save -->
+                    <!-- Save Status -->
                     <div class="hidden md:flex items-center gap-1.5 bg-white/15 px-2.5 py-1.5 rounded-xl border border-white/20 text-[11px]">
                         <i class="fa-solid fa-cloud-check text-emerald-300" x-show="lastSavedTime"></i>
-                        <span class="font-semibold whitespace-nowrap" x-text="lastSavedTime ? 'Đã lưu ' + lastSavedTime : 'Tự động lưu'"></span>
-                        <button @click="manualSave()" title="Lưu dữ liệu ngay lập tức"
-                                class="ml-1 px-2 py-0.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] shadow-xs transition">
-                            Lưu Ngay
+                        <span class="font-semibold whitespace-nowrap" x-text="lastSavedTime ? 'Lưu ' + lastSavedTime : 'Tự động lưu'"></span>
+                        <button @click="manualSave()" class="ml-1 px-2 py-0.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] transition">
+                            Lưu
                         </button>
                     </div>
 
                     <!-- Backup & Restore JSON Dropdown -->
                     <div class="relative" x-data="{ openBackup: false }">
                         <button @click="openBackup = !openBackup" title="Sao lưu & Khôi phục dữ liệu JSON"
-                                class="p-2.5 rounded-xl bg-white/15 hover:bg-white/25 transition flex items-center gap-1.5 text-xs font-bold">
+                                class="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition flex items-center gap-1.5 text-xs font-bold">
                             <i class="fa-solid fa-database"></i>
                             <span class="hidden xl:inline">Sao Lưu</span>
                         </button>
@@ -266,9 +273,8 @@
                     <!-- Quick Theme Palette Dropdown -->
                     <div class="relative" x-data="{ openTheme: false }">
                         <button @click="openTheme = !openTheme" title="Đổi màu giao diện nhanh"
-                                class="p-2.5 rounded-xl bg-white/15 hover:bg-white/25 transition flex items-center gap-1.5 text-xs font-bold">
+                                class="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition flex items-center gap-1.5 text-xs font-bold">
                             <i class="fa-solid fa-palette"></i>
-                            <span class="hidden lg:inline">Màu Giao Diện</span>
                         </button>
                         <div x-show="openTheme" @click.away="openTheme = false" x-transition
                              class="absolute right-0 mt-2 w-80 bg-white text-slate-800 rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3">
@@ -296,20 +302,20 @@
 
                     <!-- Cash Fund Badge -->
                     <button x-show="can('inventory', 'view')" @click="activeTab = 'cashbook'" title="Số dư quỹ giao nhân viên & Sổ quỹ Thu Chi"
-                            class="hidden sm:flex items-center gap-2 bg-black/20 hover:bg-black/30 px-3 py-1.5 rounded-xl text-xs transition border border-white/15">
+                            class="hidden sm:flex items-center gap-2 bg-black/20 hover:bg-black/30 px-2.5 py-1 rounded-xl text-xs transition border border-white/15">
                         <i class="fa-solid fa-wallet text-amber-300"></i>
                         <div class="text-left">
-                            <div class="text-[10px] opacity-80 leading-none">Quỹ Giao NV</div>
-                            <div class="font-bold text-amber-200" x-text="formatMoney(cashFundBalance)"></div>
+                            <div class="text-[9px] opacity-80 leading-none">Quỹ Giao NV</div>
+                            <div class="font-bold text-amber-200 text-[11px]" x-text="formatMoney(cashFundBalance)"></div>
                         </div>
                     </button>
 
                     <!-- Low Stock Alert Bell -->
                     <div class="relative" x-data="{ openAlert: false }">
-                        <button @click="openAlert = !openAlert" class="relative p-2.5 rounded-xl bg-white/15 hover:bg-white/25 transition">
+                        <button @click="openAlert = !openAlert" class="relative p-2 rounded-xl bg-white/15 hover:bg-white/25 transition">
                             <i class="fa-solid fa-bell text-sm"></i>
                             <span x-show="lowStockIngredients.length > 0"
-                                  class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white animate-pulse"
+                                  class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border border-white animate-pulse"
                                   x-text="lowStockIngredients.length"></span>
                         </button>
 
@@ -343,10 +349,10 @@
                     </div>
 
                     <!-- User Profile & Shift Checkout -->
-                    <div class="flex items-center gap-2 bg-white/15 pl-3 pr-1.5 py-1 rounded-xl border border-white/15">
+                    <div class="flex items-center gap-2 bg-white/15 pl-2.5 pr-1.5 py-1 rounded-xl border border-white/15">
                         <div class="text-right hidden md:block">
                             <div class="text-xs font-bold leading-tight" x-text="currentUser?.fullName"></div>
-                            <div class="text-[10px] opacity-90" x-text="getRoleLabel(currentUser?.role) + ' • Vào ca: ' + currentSessionStartTime"></div>
+                            <div class="text-[9px] opacity-90" x-text="getRoleLabel(currentUser?.role) + ' • Ca: ' + currentSessionStartTime"></div>
                         </div>
                         <button @click="handleLogout(true)" title="Chốt ca & Đăng xuất"
                                 class="px-2.5 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold flex items-center gap-1.5 shadow transition">
@@ -356,26 +362,91 @@
                     </div>
                 </div>
             </div>
-
-            <!-- NAVIGATION TABS -->
-            <div class="bg-black/15 border-t border-white/15">
-                <div class="max-w-[1600px] mx-auto px-2 sm:px-5 flex items-center gap-1 overflow-x-auto py-1.5">
-                    <template x-for="tab in availableTabs" :key="tab.id">
-                        <button @click="activeTab = tab.id"
-                                class="px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition"
-                                :class="activeTab === tab.id ? 'bg-white text-slate-900 shadow-sm' : 'opacity-90 hover:bg-white/15'">
-                            <i class="fa-solid" :class="tab.icon"></i>
-                            <span x-text="tab.label"></span>
-                        </button>
-                    </template>
-                </div>
-            </div>
         </header>
 
-        <!-- MAIN CONTENT CONTAINER -->
-        <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5">
+        <!-- WORKSPACE BODY: VERTICAL SIDEBAR + MAIN CONTENT -->
+        <div class="flex-1 flex relative">
+            <!-- Mobile Backdrop -->
+            <div x-show="mobileSidebarOpen" @click="mobileSidebarOpen = false" x-cloak
+                 class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 lg:hidden no-print"></div>
 
-            <!-- ===================================================================== -->
+            <!-- COMPACT VERTICAL LEFT SIDEBAR WITH SUBMENUS -->
+            <aside class="no-print bg-white border-r border-slate-200/90 shrink-0 transition-all duration-300 z-30 flex flex-col justify-between
+                          fixed lg:sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto"
+                   :class="[
+                       sidebarCollapsed ? 'w-[68px]' : 'w-60',
+                       mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                   ]">
+                <nav class="p-2.5 space-y-1">
+                    <template x-for="grp in menuGroups" :key="grp.id">
+                        <div x-show="grp.visible" class="space-y-0.5">
+                            <!-- Direct Tab Item (No Submenu) -->
+                            <template x-if="!grp.children">
+                                <button @click="selectNavTab(grp.id)" :title="grp.label"
+                                        class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition group"
+                                        :class="activeTab === grp.id ? 'theme-btn shadow-sm' : 'text-slate-700 hover:bg-slate-100'">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <i class="fa-solid w-4 text-center text-sm shrink-0" :class="grp.icon"></i>
+                                        <span x-show="!sidebarCollapsed" class="truncate" x-text="grp.label"></span>
+                                    </div>
+                                    <span x-show="!sidebarCollapsed && grp.badge > 0"
+                                          class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold"
+                                          :class="activeTab === grp.id ? 'bg-white text-slate-900' : 'bg-rose-500 text-white'"
+                                          x-text="grp.badge"></span>
+                                </button>
+                            </template>
+
+                            <!-- Collapsible Group with Submenus -->
+                            <template x-if="grp.children">
+                                <div class="pt-0.5">
+                                    <button @click="toggleMenuGroup(grp.id)" :title="grp.label"
+                                            class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold transition"
+                                            :class="grp.children.some(c => c.id === activeTab) ? 'theme-soft-bg border' : 'text-slate-700 hover:bg-slate-100'">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <i class="fa-solid w-4 text-center text-sm shrink-0" :class="grp.icon"></i>
+                                            <span x-show="!sidebarCollapsed" class="truncate" x-text="grp.label"></span>
+                                        </div>
+                                        <i x-show="!sidebarCollapsed" class="fa-solid fa-chevron-down text-[10px] opacity-70 transition-transform duration-200"
+                                           :class="openMenuGroups[grp.id] ? 'rotate-180' : ''"></i>
+                                    </button>
+
+                                    <!-- Submenu Items -->
+                                    <div x-show="openMenuGroups[grp.id] || sidebarCollapsed" x-transition
+                                         class="mt-1 space-y-0.5"
+                                         :class="sidebarCollapsed ? 'pl-0 border-t border-slate-100 pt-1' : 'pl-3 ml-3 border-l-2 border-slate-200/80'">
+                                        <template x-for="sub in grp.children" :key="sub.id">
+                                            <button x-show="sub.show !== false" @click="selectNavTab(sub.id)" :title="sub.label"
+                                                    class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-bold transition"
+                                                    :class="activeTab === sub.id ? 'theme-btn shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    <i class="fa-solid w-3.5 text-center shrink-0" :class="sub.icon"></i>
+                                                    <span x-show="!sidebarCollapsed" class="truncate" x-text="sub.label"></span>
+                                                </div>
+                                                <span x-show="!sidebarCollapsed && sub.badge > 0"
+                                                      class="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold bg-amber-500 text-white"
+                                                      x-text="sub.badge"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </nav>
+
+                <!-- Compact Footer inside Sidebar -->
+                <div x-show="!sidebarCollapsed" class="p-3 border-t border-slate-100 text-[10px] text-slate-400 space-y-1">
+                    <div class="flex items-center justify-between font-semibold text-slate-500">
+                        <span>Minano POS & ERP</span>
+                        <span class="text-emerald-600">● Cloud Sync</span>
+                    </div>
+                    <p class="truncate" x-text="shopConfig.name"></p>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT CONTAINER -->
+            <main class="flex-1 min-w-0 p-3 sm:p-5">
+
             <!-- TAB 1: POS BÁN HÀNG, SIZE/TOPPING/ĐƯỜNG ĐÁ & THANH TOÁN VIETQR        -->
             <!-- ===================================================================== -->
             <div x-show="activeTab === 'pos'" x-cloak class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
@@ -600,7 +671,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <button type="button" @click="saveTableAndNotifyKds()" :disabled="cart.length === 0"
                                     class="py-2.5 px-2 rounded-xl font-extrabold text-xs bg-amber-500 hover:bg-amber-600 text-white shadow transition flex items-center justify-center gap-1.5 disabled:opacity-40">
-                                <i class="fa-solid fa-bell-concierge"></i> Lưu Bàn & Báo Bếp
+                                <i class="fa-solid fa-bell-concierge"></i> Lưu Bàn & Báo Quầy
                             </button>
                             <button type="button" @click="sendOrderPrintToPc()" :disabled="cart.length === 0"
                                     class="py-2.5 px-2 rounded-xl font-extrabold text-xs bg-slate-800 hover:bg-slate-900 text-white shadow transition flex items-center justify-center gap-1.5 disabled:opacity-40">
@@ -929,12 +1000,46 @@
             <div x-show="activeTab === 'bom'" x-cloak class="space-y-4">
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="font-extrabold text-base text-slate-800">Bảng Định Lượng Nguyên Liệu Chi Tiết Từng Sản Phẩm (BOM)</h2>
-                        <p class="text-xs text-slate-500">Tự động tính giá vốn (COGS), lợi nhuận gộp từng ly và giới hạn số lượng bán theo tồn kho thực tế</p>
+                        <h2 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-scale-balanced theme-text"></i> Bảng Định Lượng Nguyên Liệu Chi Tiết Từng Sản Phẩm (BOM)
+                        </h2>
+                        <p class="text-xs text-slate-500">Thêm / sửa / xóa định mức nguyên liệu trực tiếp cho từng ly, tự động tính giá vốn (COGS) & giới hạn tồn kho thực tế</p>
                     </div>
-                    <button x-show="can('menu', 'create')" @click="activeTab = 'menu'" class="px-4 py-2 rounded-xl text-xs font-bold shadow self-start theme-btn">
-                        + Thêm Món & Thiết Lập Định Lượng
-                    </button>
+                    <div class="flex flex-wrap gap-2">
+                        <button x-show="can('menu', 'create')" @click="activeTab = 'menu'" class="px-4 py-2 rounded-xl text-xs font-bold shadow theme-btn">
+                            + Thêm Món Mới Vào Menu
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Add / Update BOM Ingredient Bar -->
+                <div x-show="can('menu', 'edit')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                    <div class="md:col-span-4">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">1. Chọn Món Cần Định Lượng</label>
+                        <select x-model="quickBomForm.productId" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold theme-ring">
+                            <template x-for="p in products" :key="p.id">
+                                <option :value="p.id" x-text="`${p.icon || '☕'} ${p.name} (${formatMoney(p.price)})`"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="md:col-span-4">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">2. Nguyên Liệu Tiêu Hao / 1 Ly (Size M)</label>
+                        <select x-model="quickBomForm.ingredientId" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold theme-ring">
+                            <template x-for="ing in ingredients" :key="ing.id">
+                                <option :value="ing.id" x-text="`${ing.name} (${ing.unit}) - Vốn: ${formatMoney(ing.costPerUnit)}/${ing.unit}`"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">3. Số Lượng Định Mức</label>
+                        <input type="number" x-model.number="quickBomForm.qty" min="0.1" step="0.5"
+                               class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-extrabold text-right theme-ring">
+                    </div>
+                    <div class="md:col-span-2">
+                        <button @click="addOrUpdateQuickBom()" class="w-full py-2 px-3 rounded-xl text-xs font-extrabold shadow theme-btn">
+                            <i class="fa-solid fa-plus mr-1"></i> Lưu Định Lượng
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -943,13 +1048,13 @@
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-500">
                                     <th class="p-3.5">Sản Phẩm</th>
-                                    <th class="p-3.5">Thành Phần Định Lượng (Công Thức Pha Chế)</th>
+                                    <th class="p-3.5">Thành Phần Định Lượng (Bấm để sửa / × để xóa)</th>
                                     <th class="p-3.5 text-right">Giá Vốn (COGS)</th>
                                     <th class="p-3.5 text-right">Giá Bán</th>
                                     <th class="p-3.5 text-right">Lãi Gộp / Ly</th>
                                     <th class="p-3.5 text-center">Tỷ Suất Lãi</th>
                                     <th class="p-3.5 text-center">Khả Năng Phục Vụ</th>
-                                    <th class="p-3.5 text-right">Sửa ĐL</th>
+                                    <th class="p-3.5 text-right">Thao Tác</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-xs">
@@ -968,9 +1073,16 @@
                                             <div class="flex flex-wrap gap-1.5">
                                                 <template x-for="r in prod.recipe" :key="r.ingredientId">
                                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-[11px]">
-                                                        <span class="font-semibold text-slate-700" x-text="getIngredientName(r.ingredientId)"></span>:
-                                                        <span class="font-extrabold theme-text" x-text="r.qty + getIngredientUnit(r.ingredientId)"></span>
-                                                        <span class="text-slate-400" x-text="'(' + formatMoney(getIngredientCost(r.ingredientId) * r.qty) + ')'"></span>
+                                                        <button type="button" @click="selectBomItemForEdit(prod.id, r)"
+                                                                class="hover:underline text-left flex items-center gap-1" title="Bấm để nạp lên thanh sửa định lượng">
+                                                            <span class="font-semibold text-slate-700" x-text="getIngredientName(r.ingredientId)"></span>:
+                                                            <span class="font-extrabold theme-text" x-text="r.qty + getIngredientUnit(r.ingredientId)"></span>
+                                                            <span class="text-slate-400" x-text="'(' + formatMoney(getIngredientCost(r.ingredientId) * r.qty) + ')'"></span>
+                                                        </button>
+                                                        <button x-show="can('menu', 'edit')" type="button" @click="removeBomIngredient(prod.id, r.ingredientId)"
+                                                                class="ml-1 text-slate-400 hover:text-rose-600 font-bold" title="Xóa nguyên liệu này khỏi định lượng">
+                                                            <i class="fa-solid fa-xmark"></i>
+                                                        </button>
                                                     </span>
                                                 </template>
                                                 <span x-show="!prod.recipe || prod.recipe.length === 0" class="text-slate-400 italic">Chưa gán định lượng</span>
@@ -988,10 +1100,14 @@
                                                   :class="getMaxServings(prod) <= 5 ? 'bg-rose-100 text-rose-700' : 'theme-soft-bg border'"
                                                   x-text="getMaxServings(prod) + ' phần'"></span>
                                         </td>
-                                        <td class="p-3.5 text-right">
+                                        <td class="p-3.5 text-right whitespace-nowrap space-x-1">
+                                            <button x-show="can('menu', 'edit')" @click="quickBomForm.productId = prod.id; addToast('Đã Chọn Món', 'Chọn nguyên liệu và nhập số lượng ở thanh phía trên để thêm định lượng cho ' + prod.name, 'info')"
+                                                    class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px]" title="Thêm nguyên liệu định lượng">
+                                                + ĐL
+                                            </button>
                                             <button x-show="can('menu', 'edit')" @click="editProduct(prod); activeTab = 'menu'"
                                                     class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px]">
-                                                <i class="fa-solid fa-sliders"></i> Sửa
+                                                <i class="fa-solid fa-sliders"></i> Sửa Món
                                             </button>
                                         </td>
                                     </tr>
@@ -1012,7 +1128,7 @@
                         <h2 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
                             <i class="fa-solid fa-table-cells-large theme-text"></i> Sơ Đồ Bàn & Quản Lý Khu Vực Phục Vụ
                         </h2>
-                        <p class="text-xs text-slate-500">Chạm vào bàn để mở đơn gọi món, theo dõi tiến độ pha chế, chuyển bàn hoặc gộp bàn thanh toán</p>
+                        <p class="text-xs text-slate-500">Thêm bàn mới, sửa tên/khu vực bàn, xóa bàn, mở đơn gọi món, chuyển bàn hoặc gộp bàn thanh toán</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <input type="text" x-model="newTableForm.name" placeholder="Tên bàn mới (VD: Bàn 09)"
@@ -1053,7 +1169,7 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     <template x-for="tb in filteredTables" :key="tb.id">
                         <div @click="openTableOnPos(tb)"
-                             class="rounded-2xl p-4 border-2 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between min-h-[150px] select-none"
+                             class="rounded-2xl p-4 border-2 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between min-h-[160px] select-none"
                              :class="{
                                  'bg-white border-emerald-200 hover:border-emerald-400': tb.status === 'EMPTY',
                                  'bg-amber-50/90 border-amber-400': tb.status === 'OCCUPIED',
@@ -1064,10 +1180,16 @@
                                     <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600" x-text="tb.area"></span>
                                     <h3 class="font-extrabold text-base text-slate-900 mt-1" x-text="tb.name"></h3>
                                 </div>
-                                <button @click.stop="deleteTable(tb.id)" x-show="tb.status === 'EMPTY' && can('users', 'edit')"
-                                        class="text-slate-300 hover:text-rose-500 text-xs p-1" title="Xóa bàn trống">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
+                                <div class="flex items-center gap-1">
+                                    <button @click.stop="openEditTableModal(tb)"
+                                            class="text-slate-400 hover:text-sky-600 text-xs p-1 rounded-lg hover:bg-sky-50" title="Sửa tên / khu vực bàn">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button @click.stop="confirmDeleteTable(tb)"
+                                            class="text-slate-400 hover:text-rose-600 text-xs p-1 rounded-lg hover:bg-rose-50" title="Xóa bàn">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="my-2">
@@ -1100,49 +1222,60 @@
             <!-- TAB 1C: MÀN HÌNH HIỂN THỊ PHA CHẾ THỜI GIAN THỰC (KDS)                -->
             <!-- ===================================================================== -->
             <div x-show="activeTab === 'kds'" x-cloak class="space-y-4">
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div>
                         <h2 class="font-extrabold text-base text-slate-800 flex items-center gap-2">
                             <i class="fa-solid fa-fire-burner theme-text"></i> Màn Hình Hiển Thị Pha Chế Thời Gian Thực (KDS)
                         </h2>
-                        <p class="text-xs text-slate-500">Đơn hàng từ quầy thu ngân và điện thoại nhân viên tự động đổ về đây theo thời gian thực</p>
+                        <p class="text-xs text-slate-500">Đơn hàng từ POS/điện thoại tự động đổ về đây — hỗ trợ thêm phiếu pha chế thủ công, sửa món/ghi chú và xóa phiếu</p>
                     </div>
-                    <div class="flex gap-2">
-                        <button @click="kdsFilter = 'ACTIVE'" class="px-4 py-2 rounded-xl text-xs font-bold transition"
-                                :class="kdsFilter === 'ACTIVE' ? 'theme-btn shadow' : 'bg-slate-100 text-slate-600'">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button @click="openNewKdsModal()" class="px-3.5 py-2 rounded-xl text-xs font-extrabold shadow theme-btn">
+                            + Thêm Phiếu Pha Chế
+                        </button>
+                        <button @click="kdsFilter = 'ACTIVE'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition"
+                                :class="kdsFilter === 'ACTIVE' ? 'bg-slate-800 text-white shadow' : 'bg-slate-100 text-slate-600'">
                             Đang Chờ & Pha Chế (<span x-text="kdsTickets.filter(t => t.status !== 'DONE').length"></span>)
                         </button>
-                        <button @click="kdsFilter = 'DONE'" class="px-4 py-2 rounded-xl text-xs font-bold transition"
-                                :class="kdsFilter === 'DONE' ? 'theme-btn shadow' : 'bg-slate-100 text-slate-600'">
+                        <button @click="kdsFilter = 'DONE'" class="px-3.5 py-2 rounded-xl text-xs font-bold transition"
+                                :class="kdsFilter === 'DONE' ? 'bg-slate-800 text-white shadow' : 'bg-slate-100 text-slate-600'">
                             Đã Hoàn Thành (<span x-text="kdsTickets.filter(t => t.status === 'DONE').length"></span>)
                         </button>
                     </div>
                 </div>
 
                 <template x-if="filteredKdsTickets.length === 0">
-                    <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400">
-                        <i class="fa-solid fa-mug-hot text-4xl mb-2 opacity-40"></i>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
+                        <i class="fa-solid fa-mug-hot text-4xl opacity-40"></i>
                         <p class="font-bold text-sm text-slate-600">Hiện không có phiếu pha chế nào trong danh sách này</p>
-                        <p class="text-xs mt-1">Khi thu ngân bấm "Lưu Bàn & Báo Bếp" hoặc thanh toán đơn, phiếu sẽ xuất hiện ngay lập tức</p>
+                        <p class="text-xs">Khi thu ngân bấm "Lưu Bàn & Báo Quầy", thanh toán đơn, hoặc bấm "+ Thêm Phiếu Pha Chế", phiếu sẽ xuất hiện ngay lập tức</p>
                     </div>
                 </template>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     <template x-for="tk in filteredKdsTickets" :key="tk.id">
                         <div class="bg-white rounded-2xl border-2 shadow-sm overflow-hidden flex flex-col justify-between"
-                             :class="tk.status === 'PENDING' ? 'border-amber-400' : (tk.status === 'BREWING' ? 'border-sky-400' : 'border-emerald-300 opacity-85')">
+                             :class="tk.status === 'PENDING' ? 'border-amber-400' : (tk.status === 'BREWING' ? 'border-sky-400' : 'border-emerald-300 opacity-90')">
                             <div>
-                                <div class="p-3.5 flex items-center justify-between border-b"
+                                <div class="p-3.5 flex items-start justify-between border-b"
                                      :class="tk.status === 'PENDING' ? 'bg-amber-50 border-amber-200' : (tk.status === 'BREWING' ? 'bg-sky-50 border-sky-200' : 'bg-emerald-50 border-emerald-200')">
                                     <div>
                                         <span class="font-mono font-extrabold text-xs text-slate-800" x-text="tk.id"></span>
                                         <h4 class="font-extrabold text-sm text-slate-900" x-text="tk.table"></h4>
+                                        <p class="text-[10px] text-slate-500 mt-0.5" x-text="'Lúc: ' + tk.time"></p>
                                     </div>
-                                    <div class="text-right">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+                                    <div class="text-right space-y-1">
+                                        <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold"
                                               :class="tk.status === 'PENDING' ? 'bg-amber-200 text-amber-900' : (tk.status === 'BREWING' ? 'bg-sky-200 text-sky-900' : 'bg-emerald-200 text-emerald-900')"
                                               x-text="tk.status === 'PENDING' ? 'Chờ pha chế' : (tk.status === 'BREWING' ? 'Đang pha chế' : 'Hoàn thành')"></span>
-                                        <p class="text-[10px] text-slate-500 mt-1" x-text="tk.time"></p>
+                                        <div class="flex items-center justify-end gap-1 pt-0.5">
+                                            <button @click="openEditKdsModal(tk)" class="p-1 rounded bg-white/80 hover:bg-white text-sky-700 text-[11px]" title="Sửa phiếu pha chế">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            <button @click="deleteKdsTicket(tk.id)" class="p-1 rounded bg-white/80 hover:bg-white text-rose-600 text-[11px]" title="Xóa phiếu pha chế">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="p-3.5 divide-y divide-slate-100 text-xs">
@@ -1161,11 +1294,15 @@
                             <div class="p-3 bg-slate-50 border-t border-slate-100 flex gap-2">
                                 <button x-show="tk.status === 'PENDING'" @click="updateKdsStatus(tk.id, 'BREWING')"
                                         class="flex-1 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-extrabold">
-                                    <i class="fa-solid fa-blender mr-1"></i> Bắt Đầu Pha Chế
+                                    <i class="fa-solid fa-blender mr-1"></i> Bắt Đầu Pha
                                 </button>
                                 <button x-show="tk.status !== 'DONE'" @click="updateKdsStatus(tk.id, 'DONE')"
                                         class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold">
-                                    <i class="fa-solid fa-check mr-1"></i> Hoàn Thành & Ra Món
+                                    <i class="fa-solid fa-check mr-1"></i> Hoàn Thành
+                                </button>
+                                <button x-show="tk.status === 'DONE'" @click="updateKdsStatus(tk.id, 'PENDING')"
+                                        class="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold">
+                                    <i class="fa-solid fa-rotate-left mr-1"></i> Khôi Phục Chờ Pha
                                 </button>
                             </div>
                         </div>
@@ -2159,7 +2296,108 @@
                 </div>
             </div>
 
-        </main>
+            </main>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL: SỬA THÔNG TIN BÀN (SƠ ĐỒ BÀN)                                  -->
+    <!-- ===================================================================== -->
+    <div x-show="showEditTableModal" x-cloak class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-extrabold text-base text-slate-800"><i class="fa-solid fa-pen-to-square theme-text mr-1.5"></i> Chỉnh Sửa Thông Tin Bàn</h3>
+                <button @click="showEditTableModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Tên bàn *</label>
+                    <input type="text" x-model="editTableForm.name" class="w-full rounded-xl border border-slate-300 px-3 py-2 font-bold theme-ring">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Khu vực phục vụ</label>
+                    <select x-model="editTableForm.area" class="w-full rounded-xl border border-slate-300 px-3 py-2 font-bold">
+                        <option value="Tầng Trệt">Tầng Trệt</option>
+                        <option value="Sân Thượng">Sân Thượng</option>
+                        <option value="Phòng Lạnh">Phòng Lạnh</option>
+                        <option value="Khu Sân Vườn">Khu Sân Vườn</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Trạng thái bàn</label>
+                    <select x-model="editTableForm.status" class="w-full rounded-xl border border-slate-300 px-3 py-2 font-bold">
+                        <option value="EMPTY">Trống (Sẵn sàng)</option>
+                        <option value="OCCUPIED">Đang phục vụ</option>
+                        <option value="READY">Đã ra đủ món</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button @click="saveEditedTable()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold shadow theme-btn">Lưu Thay Đổi Bàn</button>
+                <button @click="showEditTableModal = false" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL: THÊM / SỬA PHIẾU PHA CHẾ (KDS)                                 -->
+    <!-- ===================================================================== -->
+    <div x-show="showKdsModal" x-cloak class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-extrabold text-base text-slate-800">
+                    <i class="fa-solid fa-fire-burner theme-text mr-1.5"></i>
+                    <span x-text="kdsForm.id ? 'Chỉnh Sửa Phiếu Pha Chế (' + kdsForm.id + ')' : 'Tạo Phiếu Pha Chế Mới'"></span>
+                </h3>
+                <button @click="showKdsModal = false" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1">Bàn / Khách hàng *</label>
+                        <input type="text" x-model="kdsForm.table" placeholder="VD: Bàn 02 hoặc Mang về" class="w-full rounded-xl border border-slate-300 px-3 py-2 font-bold theme-ring">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1">Trạng thái pha chế</label>
+                        <select x-model="kdsForm.status" class="w-full rounded-xl border border-slate-300 px-3 py-2 font-bold">
+                            <option value="PENDING">Chờ pha chế</option>
+                            <option value="BREWING">Đang pha chế</option>
+                            <option value="DONE">Hoàn thành & Ra món</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-2 border-t border-slate-100 pt-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-700">Danh sách món pha chế:</span>
+                        <button type="button" @click="addKdsFormItem()" class="font-bold theme-text hover:underline">+ Thêm dòng món</button>
+                    </div>
+                    <div class="max-h-56 overflow-y-auto space-y-2 pr-1">
+                        <template x-for="(it, idx) in kdsForm.items" :key="it.cartItemId">
+                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                                <div class="flex items-center gap-2">
+                                    <input type="text" x-model="it.name" placeholder="Tên món..." class="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 font-bold">
+                                    <select x-model="it.size" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 font-bold">
+                                        <option value="M">Size M</option>
+                                        <option value="L">Size L</option>
+                                        <option value="S">Size S</option>
+                                    </select>
+                                    <input type="number" x-model.number="it.qty" min="1" class="w-14 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-center font-extrabold">
+                                    <button type="button" @click="kdsForm.items.splice(idx, 1)" x-show="kdsForm.items.length > 1" class="text-rose-500 hover:text-rose-700 p-1">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                                <input type="text" x-model="it.note" placeholder="Ghi chú đường/đá/topping..." class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px]">
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button @click="saveKdsForm()" class="flex-1 py-2.5 rounded-xl text-xs font-extrabold shadow theme-btn">Lưu Phiếu Pha Chế</button>
+                <button @click="showKdsModal = false" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Hủy</button>
+            </div>
+        </div>
     </div>
 
     <!-- ===================================================================== -->
@@ -2806,6 +3044,14 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
             return {
                 // Navigation & Sub-tabs
                 activeTab: 'pos',
+                sidebarCollapsed: false,
+                mobileSidebarOpen: false,
+                openMenuGroups: { ops: true, catalog: true, finance: false, system: false },
+                quickBomForm: { productId: 'p1', ingredientId: 'ing1', qty: 25 },
+                showEditTableModal: false,
+                editTableForm: { id: '', name: '', area: 'Tầng Trệt', status: 'EMPTY' },
+                showKdsModal: false,
+                kdsForm: { id: '', table: 'Bàn 01', status: 'PENDING', items: [] },
                 deviceRole: localStorage.getItem('minano_device_role') || 'PC_CASHIER',
                 cloudStatus: 'Sẵn sàng Cloud',
                 isSyncingCloud: false,
@@ -3058,6 +3304,57 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                         { id: 'settings', label: 'Thương Hiệu & Màu Sắc', icon: 'fa-palette', show: this.can('users', 'edit') }
                     ];
                     return tabs.filter(t => t.show);
+                },
+
+                get menuGroups() {
+                    const activeKdsCount = (this.kdsTickets || []).filter(t => t.status !== 'DONE').length;
+                    const busyTablesCount = (this.tables || []).filter(t => t.status !== 'EMPTY').length;
+                    return [
+                        { id: 'pos', label: 'Bán Hàng POS', icon: 'fa-cash-register', visible: true },
+                        {
+                            id: 'ops',
+                            label: 'Quầy & Pha Chế',
+                            icon: 'fa-bell-concierge',
+                            visible: true,
+                            children: [
+                                { id: 'tables', label: 'Sơ Đồ Bàn', icon: 'fa-table-cells-large', badge: busyTablesCount },
+                                { id: 'kds', label: 'Pha Chế (KDS)', icon: 'fa-fire-burner', badge: activeKdsCount },
+                                { id: 'loyalty', label: 'Khách Hàng & Điểm', icon: 'fa-crown', badge: 0 }
+                            ]
+                        },
+                        {
+                            id: 'catalog',
+                            label: 'Menu & Định Lượng',
+                            icon: 'fa-mug-hot',
+                            visible: this.can('menu', 'view'),
+                            children: [
+                                { id: 'bom', label: 'Bảng Định Lượng (BOM)', icon: 'fa-scale-balanced', badge: 0 },
+                                { id: 'menu', label: 'Quản Lý Menu', icon: 'fa-list-check', badge: 0 }
+                            ]
+                        },
+                        {
+                            id: 'finance',
+                            label: 'Kho & Tài Chính',
+                            icon: 'fa-boxes-stacked',
+                            visible: this.can('inventory', 'view'),
+                            children: [
+                                { id: 'inventory', label: 'Kho & Nhập Quỹ', icon: 'fa-warehouse', badge: this.lowStockIngredients.length },
+                                { id: 'cashbook', label: 'Sổ Quỹ Thu - Chi', icon: 'fa-money-bill-transfer', badge: 0 },
+                                { id: 'reports', label: 'Thống Kê Tổng Quan', icon: 'fa-chart-pie', badge: 0 }
+                            ]
+                        },
+                        {
+                            id: 'system',
+                            label: 'Nhân Sự & Cấu Hình',
+                            icon: 'fa-gear',
+                            visible: this.can('hr', 'view') || this.can('users', 'view'),
+                            children: [
+                                { id: 'hr', label: 'Ca Làm & Bảng Lương', icon: 'fa-user-clock', show: this.can('hr', 'view'), badge: 0 },
+                                { id: 'users', label: 'Nhân Viên & Quyền', icon: 'fa-user-shield', show: this.can('users', 'view'), badge: 0 },
+                                { id: 'settings', label: 'Thương Hiệu & Màu Sắc', icon: 'fa-palette', show: this.can('users', 'edit'), badge: 0 }
+                            ]
+                        }
+                    ];
                 },
 
                 get totalCashbookIn() {
@@ -4655,7 +4952,7 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                         items: JSON.parse(JSON.stringify(this.cart))
                     });
                     this.saveState();
-                    this.addToast('Đã Lưu Bàn & Báo Bếp', `Đơn của ${this.orderTable} đã chuyển sang màn hình Pha Chế (KDS)!`, 'success');
+                    this.addToast('Đã Lưu Bàn & Báo Quầy', `Đơn của ${this.orderTable} đã chuyển sang màn hình Pha Chế (KDS)!`, 'success');
                 },
 
                 executeTransferOrMergeTable() {
@@ -4766,6 +5063,169 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                     else if (cat.includes('trà')) this.selectedIconGroup = 'TEA';
                     else if (cat.includes('ngọt') || cat.includes('chai')) this.selectedIconGroup = 'BOTTLE';
                     else this.selectedIconGroup = 'ALL';
+                },
+
+                // ==================== VERTICAL SIDEBAR & SUBMENU HELPERS ====================
+                selectNavTab(tabId) {
+                    this.activeTab = tabId;
+                    this.mobileSidebarOpen = false;
+                },
+
+                toggleMenuGroup(grpId) {
+                    if (this.sidebarCollapsed) {
+                        this.sidebarCollapsed = false;
+                        this.openMenuGroups[grpId] = true;
+                    } else {
+                        this.openMenuGroups[grpId] = !this.openMenuGroups[grpId];
+                    }
+                },
+
+                // ==================== DIRECT BOM (ĐỊNH LƯỢNG) ADD / EDIT / DELETE ====================
+                selectBomItemForEdit(productId, r) {
+                    this.quickBomForm.productId = productId;
+                    this.quickBomForm.ingredientId = r.ingredientId;
+                    this.quickBomForm.qty = Number(r.qty || 0);
+                },
+
+                addOrUpdateQuickBom() {
+                    const prod = this.products.find(p => p.id === this.quickBomForm.productId);
+                    if (!prod || Number(this.quickBomForm.qty) <= 0) {
+                        this.addToast('Thiếu Dữ Liệu', 'Vui lòng chọn món và nhập số lượng định lượng > 0!', 'warning');
+                        return;
+                    }
+                    if (!Array.isArray(prod.recipe)) prod.recipe = [];
+                    const existing = prod.recipe.find(r => r.ingredientId === this.quickBomForm.ingredientId);
+                    if (existing) {
+                        existing.qty = Number(this.quickBomForm.qty);
+                    } else {
+                        prod.recipe.push({
+                            ingredientId: this.quickBomForm.ingredientId,
+                            qty: Number(this.quickBomForm.qty)
+                        });
+                    }
+                    this.recordAuditLog('BOM', 'Cập nhật định lượng', `Định lượng ${prod.name}: ${this.getIngredientName(this.quickBomForm.ingredientId)} = ${this.quickBomForm.qty}`);
+                    this.saveState();
+                    this.addToast('Đã Lưu Định Lượng', `Đã cập nhật công thức cho món "${prod.name}"!`, 'success');
+                },
+
+                removeBomIngredient(productId, ingredientId) {
+                    const prod = this.products.find(p => p.id === productId);
+                    if (!prod || !Array.isArray(prod.recipe)) return;
+                    prod.recipe = prod.recipe.filter(r => r.ingredientId !== ingredientId);
+                    this.saveState();
+                    this.addToast('Đã Xóa Thành Phần', 'Đã xóa nguyên liệu khỏi định lượng món.', 'info');
+                },
+
+                // ==================== SƠ ĐỒ BÀN: SỬA & XÓA BÀN ====================
+                openEditTableModal(tb) {
+                    this.editTableForm = {
+                        id: tb.id,
+                        name: tb.name,
+                        area: tb.area || 'Tầng Trệt',
+                        status: tb.status || 'EMPTY'
+                    };
+                    this.showEditTableModal = true;
+                },
+
+                saveEditedTable() {
+                    if (!this.editTableForm.name.trim()) {
+                        this.addToast('Thiếu Tên Bàn', 'Vui lòng nhập tên bàn!', 'warning');
+                        return;
+                    }
+                    const tb = this.tables.find(t => t.id === this.editTableForm.id);
+                    if (tb) {
+                        tb.name = this.editTableForm.name.trim();
+                        tb.area = this.editTableForm.area;
+                        tb.status = this.editTableForm.status;
+                        if (tb.status === 'EMPTY') {
+                            tb.items = [];
+                            tb.openedAt = '';
+                        }
+                        this.saveState();
+                        this.addToast('Đã Cập Nhật Bàn', `Đã lưu thông tin ${tb.name} (${tb.area})!`, 'success');
+                    }
+                    this.showEditTableModal = false;
+                },
+
+                confirmDeleteTable(tb) {
+                    if (tb.status !== 'EMPTY') {
+                        if (!confirm(`Bàn "${tb.name}" đang có khách/món gọi. Bạn vẫn chắc chắn muốn xóa bàn này?`)) return;
+                    }
+                    this.deleteTable(tb.id);
+                    this.addToast('Đã Xóa Bàn', `Đã xóa ${tb.name} khỏi sơ đồ bàn.`, 'info');
+                },
+
+                // ==================== PHA CHẾ (KDS): THÊM / SỬA / XÓA PHIẾU ====================
+                openNewKdsModal() {
+                    this.kdsForm = {
+                        id: '',
+                        table: this.tables[0]?.name || 'Bàn 01',
+                        status: 'PENDING',
+                        items: [
+                            { cartItemId: 'CI' + Date.now(), name: this.products[0]?.name || 'Cafe Sữa Đá Minano', size: 'M', qty: 1, sugarIce: '100% Đường/Đá', note: '' }
+                        ]
+                    };
+                    this.showKdsModal = true;
+                },
+
+                openEditKdsModal(tk) {
+                    this.kdsForm = {
+                        id: tk.id,
+                        table: tk.table,
+                        status: tk.status,
+                        items: JSON.parse(JSON.stringify(tk.items || []))
+                    };
+                    if (this.kdsForm.items.length === 0) {
+                        this.addKdsFormItem();
+                    }
+                    this.showKdsModal = true;
+                },
+
+                addKdsFormItem() {
+                    this.kdsForm.items.push({
+                        cartItemId: 'CI' + Date.now() + Math.random(),
+                        name: this.products[0]?.name || 'Trà Đào Cam Sả',
+                        size: 'M',
+                        qty: 1,
+                        sugarIce: '100% Đường/Đá',
+                        note: ''
+                    });
+                },
+
+                saveKdsForm() {
+                    const validItems = (this.kdsForm.items || []).filter(it => it.name && it.name.trim());
+                    if (!this.kdsForm.table.trim() || validItems.length === 0) {
+                        this.addToast('Thiếu Thông Tin', 'Vui lòng nhập tên bàn và ít nhất 1 món pha chế!', 'warning');
+                        return;
+                    }
+
+                    if (this.kdsForm.id) {
+                        const tk = this.kdsTickets.find(t => t.id === this.kdsForm.id);
+                        if (tk) {
+                            tk.table = this.kdsForm.table.trim();
+                            tk.status = this.kdsForm.status;
+                            tk.items = validItems;
+                        }
+                        this.addToast('Đã Cập Nhật Phiếu Pha Chế', `Phiếu ${this.kdsForm.id} đã được cập nhật!`, 'success');
+                    } else {
+                        const newId = 'KDS' + Math.floor(1000 + Math.random() * 9000);
+                        this.kdsTickets.unshift({
+                            id: newId,
+                            table: this.kdsForm.table.trim(),
+                            time: new Date().toTimeString().slice(0, 5),
+                            status: this.kdsForm.status,
+                            items: validItems
+                        });
+                        this.addToast('Đã Thêm Phiếu Pha Chế', `Phiếu ${newId} đã được đẩy lên màn hình pha chế!`, 'success');
+                    }
+                    this.showKdsModal = false;
+                    this.saveState();
+                },
+
+                deleteKdsTicket(ticketId) {
+                    this.kdsTickets = this.kdsTickets.filter(t => t.id !== ticketId);
+                    this.saveState();
+                    this.addToast('Đã Xóa Phiếu Pha Chế', `Phiếu ${ticketId} đã được xóa khỏi danh sách.`, 'info');
                 }
             };
         }
