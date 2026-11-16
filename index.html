@@ -9,6 +9,8 @@
     <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Alpine.js -->
+    <!-- QRious: Vẽ mã QR nội bộ trực tiếp tại trình duyệt (0ms, không lỗi mạng/chặn hotlink) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -671,7 +673,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <button type="button" @click="saveTableAndNotifyKds()" :disabled="cart.length === 0"
                                     class="py-2.5 px-2 rounded-xl font-extrabold text-xs bg-amber-500 hover:bg-amber-600 text-white shadow transition flex items-center justify-center gap-1.5 disabled:opacity-40">
-                                <i class="fa-solid fa-bell-concierge"></i> Lưu Bàn & Báo Quầy
+                                <i class="fa-solid fa-bell-concierge"></i> Lưu Bàn & Báo Bếp
                             </button>
                             <button type="button" @click="sendOrderPrintToPc()" :disabled="cart.length === 0"
                                     class="py-2.5 px-2 rounded-xl font-extrabold text-xs bg-slate-800 hover:bg-slate-900 text-white shadow transition flex items-center justify-center gap-1.5 disabled:opacity-40">
@@ -1248,7 +1250,7 @@
                     <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 space-y-2">
                         <i class="fa-solid fa-mug-hot text-4xl opacity-40"></i>
                         <p class="font-bold text-sm text-slate-600">Hiện không có phiếu pha chế nào trong danh sách này</p>
-                        <p class="text-xs">Khi thu ngân bấm "Lưu Bàn & Báo Quầy", thanh toán đơn, hoặc bấm "+ Thêm Phiếu Pha Chế", phiếu sẽ xuất hiện ngay lập tức</p>
+                        <p class="text-xs">Khi thu ngân bấm "Lưu Bàn & Báo Bếp", thanh toán đơn, hoặc bấm "+ Thêm Phiếu Pha Chế", phiếu sẽ xuất hiện ngay lập tức</p>
                     </div>
                 </template>
 
@@ -1690,37 +1692,55 @@
 
                 <!-- SUB-TAB 1: WEEKLY SHIFT SCHEDULE -->
                 <div x-show="hrSubTab === 'schedule'" class="space-y-4">
-                    <!-- Quick Assign Shift Form -->
-                    <div x-show="can('hr', 'create') || can('hr', 'edit')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Chọn Ngày Trong Tuần</label>
-                            <select x-model="shiftAssign.day" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold">
-                                <template x-for="d in weekDays" :key="d">
-                                    <option :value="d" x-text="d"></option>
-                                </template>
-                            </select>
+                    <!-- Quick Assign Shift Form (Full Custom Time & Shift Picker) -->
+                    <div x-show="can('hr', 'create') || can('hr', 'edit')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Nhân Viên Phụ Trách</label>
+                                <select x-model="shiftAssign.staffName" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold">
+                                    <template x-for="u in users" :key="u.id">
+                                        <option :value="u.fullName" x-text="u.fullName"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Ngày Trong Tuần</label>
+                                <select x-model="shiftAssign.day" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold">
+                                    <template x-for="d in weekDays" :key="d">
+                                        <option :value="d" x-text="d"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Mẫu Ca Nhanh</label>
+                                <select x-model="shiftAssign.preset" @change="applyShiftAssignPreset()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold">
+                                    <option value="Ca Sáng">Ca Sáng</option>
+                                    <option value="Ca Chiều">Ca Chiều</option>
+                                    <option value="Ca Tối">Ca Tối</option>
+                                    <option value="Ca Gãy">Ca Gãy</option>
+                                    <option value="Full-time">Full-time (Cả ngày)</option>
+                                    <option value="Ca Tự Chọn">Ca Tự Chọn Giờ</option>
+                                    <option value="Nghỉ Phép / Off">Nghỉ Phép / Off</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Giờ Bắt Đầu Ca</label>
+                                <input type="time" x-model="shiftAssign.startTime" @input="syncShiftAssignLabel()" :disabled="shiftAssign.preset === 'Nghỉ Phép / Off'"
+                                       class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Giờ Kết Thúc Ca</label>
+                                <input type="time" x-model="shiftAssign.endTime" @input="syncShiftAssignLabel()" :disabled="shiftAssign.preset === 'Nghỉ Phép / Off'"
+                                       class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono font-bold">
+                            </div>
+                            <button @click="assignShift()" class="py-2.5 px-4 rounded-xl text-xs font-extrabold shadow theme-btn">
+                                <i class="fa-solid fa-calendar-plus mr-1"></i> + Xếp Ca Trực
+                            </button>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Ca Trực</label>
-                            <select x-model="shiftAssign.shift" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold">
-                                <option value="Ca Sáng (06:30-14:30)">Ca Sáng (06:30-14:30)</option>
-                                <option value="Ca Chiều (14:30-22:30)">Ca Chiều (14:30-22:30)</option>
-                                <option value="Ca Tối (18:00-23:00)">Ca Tối (18:00-23:00)</option>
-                                <option value="Full-time (08:00-17:00)">Full-time (08:00-17:00)</option>
-                                <option value="Nghỉ Phép / Off">Nghỉ Phép / Off</option>
-                            </select>
+                        <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                            <span class="font-bold text-slate-600">Tên ca hiển thị (có thể gõ sửa tự do):</span>
+                            <input type="text" x-model="shiftAssign.shift" class="flex-1 min-w-[220px] rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold theme-text">
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Nhân Viên Phụ Trách</label>
-                            <select x-model="shiftAssign.staffName" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold">
-                                <template x-for="u in users" :key="u.id">
-                                    <option :value="u.fullName" x-text="u.fullName"></option>
-                                </template>
-                            </select>
-                        </div>
-                        <button @click="assignShift()" class="py-2.5 px-4 rounded-xl text-xs font-extrabold shadow theme-btn">
-                            <i class="fa-solid fa-calendar-plus mr-1"></i> + Xếp Ca Làm Việc
-                        </button>
                     </div>
 
                     <!-- Weekly Matrix Board (Per Staff x Mon-Sun) -->
@@ -1748,24 +1768,20 @@
                                             </td>
                                             <template x-for="d in weekDays" :key="d">
                                                 <td class="p-2 text-center">
-                                                    <select :value="getStaffDayShift(u.fullName, d)"
-                                                            @change="setStaffDayShift(u.fullName, d, $event.target.value)"
-                                                            :disabled="!can('hr', 'edit')"
-                                                            class="w-full rounded-lg border px-2 py-1.5 text-[11px] font-bold transition"
-                                                            :class="{
-                                                                'bg-sky-50 border-sky-200 text-sky-800': getStaffDayShift(u.fullName, d).includes('Sáng'),
-                                                                'bg-amber-50 border-amber-200 text-amber-800': getStaffDayShift(u.fullName, d).includes('Chiều'),
-                                                                'bg-indigo-50 border-indigo-200 text-indigo-800': getStaffDayShift(u.fullName, d).includes('Tối'),
-                                                                'bg-emerald-50 border-emerald-200 text-emerald-800': getStaffDayShift(u.fullName, d).includes('Full'),
-                                                                'bg-slate-50 border-slate-200 text-slate-400': !getStaffDayShift(u.fullName, d) || getStaffDayShift(u.fullName, d).includes('Nghỉ')
-                                                            }">
-                                                        <option value="">-- Chưa xếp --</option>
-                                                        <option value="Ca Sáng (06:30-14:30)">Ca Sáng (06:30-14:30)</option>
-                                                        <option value="Ca Chiều (14:30-22:30)">Ca Chiều (14:30-22:30)</option>
-                                                        <option value="Ca Tối (18:00-23:00)">Ca Tối (18:00-23:00)</option>
-                                                        <option value="Full-time (08:00-17:00)">Full-time (08:00-17:00)</option>
-                                                        <option value="Nghỉ Phép / Off">Nghỉ Phép / Off</option>
-                                                    </select>
+                                                    <input type="text" list="shift-time-presets"
+                                                           :value="getStaffDayShift(u.fullName, d)"
+                                                           @change="setStaffDayShift(u.fullName, d, $event.target.value)"
+                                                           :disabled="!can('hr', 'edit')"
+                                                           placeholder="-- Chọn / gõ giờ --"
+                                                           class="w-full rounded-lg border px-2 py-1.5 text-[11px] font-bold transition text-center"
+                                                           :class="{
+                                                               'bg-sky-50 border-sky-200 text-sky-800': getStaffDayShift(u.fullName, d).includes('Sáng'),
+                                                               'bg-amber-50 border-amber-200 text-amber-800': getStaffDayShift(u.fullName, d).includes('Chiều'),
+                                                               'bg-indigo-50 border-indigo-200 text-indigo-800': getStaffDayShift(u.fullName, d).includes('Tối'),
+                                                               'bg-emerald-50 border-emerald-200 text-emerald-800': getStaffDayShift(u.fullName, d).includes('Full'),
+                                                               'bg-purple-50 border-purple-200 text-purple-800': getStaffDayShift(u.fullName, d) && !['Sáng','Chiều','Tối','Full','Nghỉ'].some(k => getStaffDayShift(u.fullName, d).includes(k)),
+                                                               'bg-slate-50 border-slate-200 text-slate-400': !getStaffDayShift(u.fullName, d) || getStaffDayShift(u.fullName, d).includes('Nghỉ')
+                                                           }">
                                                 </td>
                                             </template>
                                         </tr>
@@ -1776,10 +1792,24 @@
                     </div>
                 </div>
 
+                <datalist id="shift-time-presets">
+                                <option value="Ca Sáng (06:00-14:00)">
+                                <option value="Ca Sáng (06:30-14:30)">
+                                <option value="Ca Sáng (07:00-15:00)">
+                                <option value="Ca Chiều (14:00-22:00)">
+                                <option value="Ca Chiều (14:30-22:30)">
+                                <option value="Ca Chiều (15:00-22:30)">
+                                <option value="Ca Tối (18:00-23:00)">
+                                <option value="Ca Gãy (08:00-12:00 & 17:00-21:00)">
+                                <option value="Full-time (07:00-17:00)">
+                                <option value="Full-time (08:00-17:00)">
+                                <option value="Full-time (08:00-20:00)">
+                                <option value="Nghỉ Phép / Off">
+                            </datalist>
                 <!-- SUB-TAB 2: DETAILED ATTENDANCE LOGS -->
                 <div x-show="hrSubTab === 'attendance'" class="space-y-4">
-                    <!-- Manual Attendance Entry -->
-                    <div x-show="can('hr', 'create')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                    <!-- Manual Attendance Entry with Start & End Time Pickers -->
+                    <div x-show="can('hr', 'create')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Nhân Viên</label>
                             <select x-model="manualAttForm.userId" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold">
@@ -1790,25 +1820,36 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Ngày Làm Việc</label>
-                            <input type="text" x-model="manualAttForm.date" placeholder="DD/MM/YYYY" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs">
+                            <input type="text" x-model="manualAttForm.date" placeholder="DD/MM/YYYY" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Số Giờ Công Ghi Nhận</label>
-                            <input type="number" x-model.number="manualAttForm.hours" step="0.5" min="0.5" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-extrabold">
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Giờ Bắt Đầu Ca</label>
+                            <input type="time" x-model="manualAttForm.startTime" @input="recalcManualAttHours()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Giờ Kết Thúc Ca</label>
+                            <input type="time" x-model="manualAttForm.endTime" @input="recalcManualAttHours()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Tổng Giờ Công</label>
+                            <input type="number" x-model.number="manualAttForm.hours" step="0.25" min="0.25" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-extrabold text-right theme-text">
                         </div>
                         <button @click="addManualAttendance()" class="py-2.5 px-4 rounded-xl text-xs font-extrabold shadow theme-btn">
-                            <i class="fa-solid fa-plus mr-1"></i> + Chấm Công Thủ Công
+                            <i class="fa-solid fa-plus mr-1"></i> + Chấm Công
                         </button>
                     </div>
 
                     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
+                            <span><i class="fa-solid fa-pen-to-square theme-text mr-1"></i> Quản lý / Admin có thể sửa trực tiếp <strong>Giờ bắt đầu ca (Check-in)</strong> và <strong>Giờ chốt ca (Check-out)</strong> để hệ thống tự tính lại giờ công.</span>
+                        </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase text-slate-500">
                                         <th class="p-3.5">Nhân Viên</th>
                                         <th class="p-3.5">Ngày</th>
-                                        <th class="p-3.5 text-center">Giờ Vào Ca (Check-in)</th>
+                                        <th class="p-3.5 text-center">Giờ Bắt Đầu Ca (Check-in)</th>
                                         <th class="p-3.5 text-center">Giờ Chốt Ca (Check-out)</th>
                                         <th class="p-3.5 text-right">Tổng Giờ Công</th>
                                         <th class="p-3.5 text-right">Thao Tác</th>
@@ -1818,10 +1859,30 @@
                                     <template x-for="att in attendanceLogs" :key="att.id">
                                         <tr class="hover:bg-slate-50">
                                             <td class="p-3.5 font-bold text-slate-800" x-text="att.staffName"></td>
-                                            <td class="p-3.5 text-slate-600" x-text="att.date"></td>
-                                            <td class="p-3.5 text-center font-mono text-emerald-700 font-bold" x-text="att.checkIn"></td>
-                                            <td class="p-3.5 text-center font-mono" :class="att.checkOut ? 'text-slate-700' : 'text-amber-600 font-bold'"
-                                                x-text="att.checkOut || 'Đang trong ca...'"></td>
+                                            <td class="p-3.5">
+                                                <input x-show="can('hr', 'edit')" type="text" :value="att.date"
+                                                       @change="att.date = $event.target.value; saveState()"
+                                                       class="w-28 px-2 py-1 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700">
+                                                <span x-show="!can('hr', 'edit')" class="text-slate-600" x-text="att.date"></span>
+                                            </td>
+                                            <td class="p-3.5 text-center">
+                                                <input x-show="can('hr', 'edit')" type="time" step="1"
+                                                       :value="normalizeTimeInput(att.checkIn)"
+                                                       @change="updateAttendanceTimes(att.id, 'checkIn', $event.target.value)"
+                                                       class="px-2 py-1 rounded-lg border border-emerald-200 bg-emerald-50/60 font-mono text-emerald-800 font-bold text-xs">
+                                                <span x-show="!can('hr', 'edit')" class="font-mono text-emerald-700 font-bold" x-text="att.checkIn"></span>
+                                            </td>
+                                            <td class="p-3.5 text-center">
+                                                <div x-show="can('hr', 'edit')" class="inline-flex items-center gap-1">
+                                                    <input type="time" step="1"
+                                                           :value="normalizeTimeInput(att.checkOut)"
+                                                           @change="updateAttendanceTimes(att.id, 'checkOut', $event.target.value)"
+                                                           class="px-2 py-1 rounded-lg border border-slate-200 bg-white font-mono text-slate-800 font-bold text-xs">
+                                                    <span x-show="!att.checkOut" class="text-[10px] text-amber-600 font-bold">(Đang ca)</span>
+                                                </div>
+                                                <span x-show="!can('hr', 'edit')" class="font-mono" :class="att.checkOut ? 'text-slate-700' : 'text-amber-600 font-bold'"
+                                                      x-text="att.checkOut || 'Đang trong ca...'"></span>
+                                            </td>
                                             <td class="p-3.5 text-right">
                                                 <input x-show="can('hr', 'edit')" type="number" step="0.25" min="0"
                                                        :value="att.hours" @change="updateAttendanceHours(att.id, $event.target.value)"
@@ -1965,7 +2026,13 @@
                                                       :class="u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : (u.role === 'MANAGER' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800')"
                                                       x-text="getRoleLabel(u.role)"></span>
                                             </td>
-                                            <td class="p-3.5 text-slate-600" x-text="u.defaultShift || '-'"></td>
+                                            <td class="p-3.5">
+                                                <input x-show="can('users', 'edit')" type="text" list="shift-time-presets"
+                                                       :value="u.defaultShift || ''"
+                                                       @change="u.defaultShift = $event.target.value; recordAuditLog('USERS', 'Sửa giờ ca nhân viên', 'Cập nhật ca mặc định của ' + u.fullName + ' thành: ' + u.defaultShift); saveState()"
+                                                       class="w-44 rounded-lg border border-slate-200 bg-slate-50 hover:bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 theme-ring">
+                                                <span x-show="!can('users', 'edit')" class="text-slate-600" x-text="u.defaultShift || '-'"></span>
+                                            </td>
                                             <td class="p-3.5">
                                                 <div class="font-bold text-emerald-700" x-text="formatMoney(u.baseSalary) + (u.salaryType === 'HOURLY' ? '/giờ' : '/tháng')"></div>
                                                 <div class="text-[10px] text-slate-400" x-text="'Phụ cấp: ' + formatMoney(u.allowance || 0)"></div>
@@ -2983,14 +3050,39 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                         <option value="ADMIN">Admin Quản Lý App</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block font-bold text-slate-600 mb-1">Ca Làm Việc Mặc Định</label>
-                    <select x-model="staffForm.defaultShift" class="w-full rounded-xl border border-slate-300 px-3 py-2">
-                        <option value="Ca Sáng (07:00-15:00)">Ca Sáng (07:00-15:00)</option>
-                        <option value="Ca Chiều (15:00-22:30)">Ca Chiều (15:00-22:30)</option>
-                        <option value="Ca Tối (18:00-23:00)">Ca Tối (18:00-23:00)</option>
-                        <option value="Ca Full (08:00-17:00)">Ca Full (08:00-17:00)</option>
-                    </select>
+                <div class="sm:col-span-2 p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="font-extrabold text-slate-700"><i class="fa-solid fa-clock theme-text mr-1"></i> Cấu Hình Ca & Giờ Bắt Đầu Làm Việc Mặc Định</label>
+                        <span class="text-[11px] font-bold theme-text" x-text="staffForm.defaultShift"></span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">Loại Ca Làm Việc</label>
+                            <select x-model="staffForm.shiftPreset" @change="applyStaffShiftPreset()" class="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-2 font-bold">
+                                <option value="Ca Sáng">Ca Sáng</option>
+                                <option value="Ca Chiều">Ca Chiều</option>
+                                <option value="Ca Tối">Ca Tối</option>
+                                <option value="Ca Gãy">Ca Gãy</option>
+                                <option value="Ca Full">Ca Full (Toàn thời gian)</option>
+                                <option value="Ca Tự Chọn">Ca Tự Chọn Giờ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">Giờ Bắt Đầu Ca</label>
+                            <input type="time" x-model="staffForm.shiftStart" @input="syncStaffShiftLabel()"
+                                   class="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-2 font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-500 mb-1">Giờ Kết Thúc Ca</label>
+                            <input type="time" x-model="staffForm.shiftEnd" @input="syncStaffShiftLabel()"
+                                   class="w-full rounded-xl border border-slate-300 bg-white px-2.5 py-2 font-mono font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 mb-1">Tên Ca Hiển Thị (Có thể chỉnh sửa tự do)</label>
+                        <input type="text" x-model="staffForm.defaultShift" placeholder="VD: Ca Sáng (06:30-14:30) hoặc Ca Full (08:00-20:00)"
+                               class="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 font-bold">
+                    </div>
                 </div>
                 <div>
                     <label class="block font-bold text-slate-600 mb-1">Hình Thức Tính Lương</label>
@@ -3143,9 +3235,9 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                     phone: '0902 220 596',
                     themeId: 'sky-pastel',
                     customColor: '#0ea5e9',
-                    bankId: 'MB',
-                    accountNo: '0902220596',
-                    accountName: 'MINANO COFFEE YEN NHI',
+                    bankId: 'TPB',
+                    accountNo: '01055831502',
+                    accountName: 'TRAN THI YEN NHI',
                     supabaseUrl: 'https://cousgmcipsruwznvmisd.supabase.co',
                     supabaseKey: 'sb_publishable_Tmd8H1NDwnTFi4eAiXgNuQ_cH20OPTI',
                     supabaseEnabled: true,
@@ -3170,6 +3262,9 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                     password: '123',
                     phone: '',
                     role: 'STAFF',
+                    shiftPreset: 'Ca Sáng',
+                    shiftStart: '07:00',
+                    shiftEnd: '15:00',
                     defaultShift: 'Ca Sáng (07:00-15:00)',
                     active: true,
                     salaryType: 'HOURLY',
@@ -3232,8 +3327,8 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                 // HR & Schedule State
                 weekDays: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'],
                 schedules: [],
-                shiftAssign: { day: 'Thứ 2', shift: 'Ca Sáng (07:00-15:00)', staffName: 'Nguyễn Thị Thu Ngân' },
-                manualAttForm: { userId: 'u3', date: new Date().toLocaleDateString('vi-VN'), hours: 8 },
+                shiftAssign: { day: 'Thứ 2', preset: 'Ca Sáng', startTime: '06:30', endTime: '14:30', shift: 'Ca Sáng (06:30-14:30)', staffName: 'Nguyễn Thị Thu Ngân' },
+                manualAttForm: { userId: 'u3', date: new Date().toLocaleDateString('vi-VN'), startTime: '07:00', endTime: '15:00', hours: 8 },
                 attendanceLogs: [],
 
                 // Audit Logs
@@ -3869,14 +3964,69 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                     if (this.auditLogs.length > 300) this.auditLogs.pop();
                 },
 
-                // VietQR Generator URL
+                // Bộ sinh mã VietQR chuẩn EMVCo (NAPAS 247) nội bộ + cơ chế dự phòng đa tầng
                 getVietQrUrl(amount, addInfo) {
-                    const bank = encodeURIComponent(this.shopConfig.bankId || 'MB');
-                    const acc = encodeURIComponent((this.shopConfig.accountNo || '').replace(/\s+/g, ''));
-                    const name = encodeURIComponent(this.shopConfig.accountName || '');
-                    const info = encodeURIComponent(addInfo || 'THANH TOAN');
+                    const bankMap = {
+                        'TPB': '970423', 'MB': '970422', 'VCB': '970436',
+                        'TCB': '970407', 'BIDV': '970418', 'ICB': '970415',
+                        'ACB': '970416', 'STB': '970403', 'VPB': '970432',
+                        'VIB': '970441', 'SHB': '970443', 'OCB': '970448',
+                        'AGRIBANK': '970405', 'MSB': '970426', 'HDB': '970437'
+                    };
+
+                    const rawBank = (this.shopConfig.bankId || 'TPB').toUpperCase().trim();
+                    const bin = bankMap[rawBank] || '970423';
+                    const acc = (this.shopConfig.accountNo || '01055831502').replace(/\s+/g, '');
                     const amt = Math.max(0, Math.round(Number(amount || 0)));
-                    return `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${amt}&addInfo=${info}&accountName=${name}`;
+                    const cleanInfo = (addInfo || 'THANH TOAN')
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+                        .replace(/[^a-zA-Z0-9 ]/g, '').trim().slice(0, 50);
+
+                    const tlv = (tag, val) => {
+                        const s = String(val);
+                        return tag + String(s.length).padStart(2, '0') + s;
+                    };
+
+                    const calcCRC16 = (str) => {
+                        let crc = 0xFFFF;
+                        for (let i = 0; i < str.length; i++) {
+                            crc ^= (str.charCodeAt(i) << 8);
+                            for (let j = 0; j < 8; j++) {
+                                crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+                            }
+                        }
+                        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+                    };
+
+                    const bankInfo = tlv('00', bin) + tlv('01', acc);
+                    const merchantAcc = tlv('00', 'A000000727') + tlv('01', bankInfo) + tlv('02', 'QRIBFTTA');
+                    let payload = tlv('00', '01')
+                                + tlv('01', amt > 0 ? '12' : '11')
+                                + tlv('38', merchantAcc)
+                                + tlv('53', '704')
+                                + (amt > 0 ? tlv('54', String(amt)) : '')
+                                + tlv('58', 'VN')
+                                + (cleanInfo ? tlv('62', tlv('08', cleanInfo)) : '')
+                                + '6304';
+                    payload += calcCRC16(payload);
+
+                    if (window.QRious) {
+                        try {
+                            const qr = new QRious({
+                                value: payload,
+                                size: 320,
+                                level: 'M',
+                                background: '#ffffff',
+                                foreground: '#0f172a'
+                            });
+                            return qr.toDataURL('image/png');
+                        } catch (e) {
+                            console.warn('QRious fallback triggered:', e);
+                        }
+                    }
+
+                    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=1&data=${encodeURIComponent(payload)}`;
                 },
 
                 // Authentication & Session Attendance
@@ -4494,8 +4644,8 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                         userId: u.id,
                         staffName: u.fullName,
                         date: this.manualAttForm.date || new Date().toLocaleDateString('vi-VN'),
-                        checkIn: 'Chấm công tay',
-                        checkOut: 'Đã xác nhận',
+                        checkIn: this.manualAttForm.startTime || '07:00',
+                        checkOut: this.manualAttForm.endTime || '15:00',
                         hours: Number(this.manualAttForm.hours)
                     });
                     this.recordAuditLog('HR', 'Chấm công bổ sung', `Thêm ${this.manualAttForm.hours} giờ công cho ${u.fullName}`);
@@ -4552,6 +4702,39 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                     this.addToast('Đổi Mật Khẩu Thành Công', 'Mật khẩu mới của bạn đã được kích hoạt!', 'success');
                 },
 
+                parseShiftRange(shiftStr) {
+                    const m = String(shiftStr || '').match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+                    const start = m ? m[1].padStart(5, '0') : '07:00';
+                    const end = m ? m[2].padStart(5, '0') : '15:00';
+                    let preset = 'Ca Tự Chọn';
+                    if (String(shiftStr).includes('Sáng')) preset = 'Ca Sáng';
+                    else if (String(shiftStr).includes('Chiều')) preset = 'Ca Chiều';
+                    else if (String(shiftStr).includes('Tối')) preset = 'Ca Tối';
+                    else if (String(shiftStr).includes('Full')) preset = 'Ca Full';
+                    else if (String(shiftStr).includes('Gãy')) preset = 'Ca Gãy';
+                    return { preset, start, end };
+                },
+
+                applyStaffShiftPreset() {
+                    const map = {
+                        'Ca Sáng': ['06:30', '14:30'],
+                        'Ca Chiều': ['14:30', '22:30'],
+                        'Ca Tối': ['18:00', '23:00'],
+                        'Ca Gãy': ['08:00', '21:00'],
+                        'Ca Full': ['08:00', '17:00'],
+                        'Ca Tự Chọn': [this.staffForm.shiftStart || '07:00', this.staffForm.shiftEnd || '15:00']
+                    };
+                    const [s, e] = map[this.staffForm.shiftPreset] || ['07:00', '15:00'];
+                    this.staffForm.shiftStart = s;
+                    this.staffForm.shiftEnd = e;
+                    this.syncStaffShiftLabel();
+                },
+
+                syncStaffShiftLabel() {
+                    const label = this.staffForm.shiftPreset || 'Ca Tự Chọn';
+                    this.staffForm.defaultShift = `${label} (${this.staffForm.shiftStart || '07:00'}-${this.staffForm.shiftEnd || '15:00'})`;
+                },
+
                 openAddStaffModal() {
                     this.editingStaffId = null;
                     const nextNum = String(this.users.length + 1).padStart(2, '0');
@@ -4562,6 +4745,9 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                         password: '123',
                         phone: '',
                         role: 'STAFF',
+                        shiftPreset: 'Ca Sáng',
+                        shiftStart: '07:00',
+                        shiftEnd: '15:00',
                         defaultShift: 'Ca Sáng (07:00-15:00)',
                         active: true,
                         salaryType: 'HOURLY',
@@ -4573,6 +4759,7 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
 
                 openEditStaffModal(u) {
                     this.editingStaffId = u.id;
+                    const parsed = this.parseShiftRange(u.defaultShift || 'Ca Sáng (07:00-15:00)');
                     this.staffForm = {
                         code: u.code || '',
                         fullName: u.fullName,
@@ -4580,6 +4767,9 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                         password: '',
                         phone: u.phone || '',
                         role: u.role,
+                        shiftPreset: parsed.preset,
+                        shiftStart: parsed.start,
+                        shiftEnd: parsed.end,
                         defaultShift: u.defaultShift || 'Ca Sáng (07:00-15:00)',
                         active: u.active !== false,
                         salaryType: u.salaryType || 'HOURLY',
@@ -4728,9 +4918,9 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                         phone: '0902 220 596',
                         themeId: 'sky-pastel',
                         customColor: '#0ea5e9',
-                        bankId: 'MB',
-                        accountNo: '0902220596',
-                        accountName: 'MINANO COFFEE YEN NHI'
+                        bankId: 'TPB',
+                        accountNo: '01055831502',
+                        accountName: 'TRAN THI YEN NHI'
                     };
                     this.saveState();
                     this.addToast('Đã Khôi Phục Mẫu', 'Đã áp dụng thông tin chuẩn của Minano Coffee Yến Nhi!', 'success');
@@ -4952,7 +5142,7 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                         items: JSON.parse(JSON.stringify(this.cart))
                     });
                     this.saveState();
-                    this.addToast('Đã Lưu Bàn & Báo Quầy', `Đơn của ${this.orderTable} đã chuyển sang màn hình Pha Chế (KDS)!`, 'success');
+                    this.addToast('Đã Lưu Bàn & Báo Bếp', `Đơn của ${this.orderTable} đã chuyển sang màn hình Pha Chế (KDS)!`, 'success');
                 },
 
                 executeTransferOrMergeTable() {
@@ -5220,6 +5410,77 @@ VALUES (1, '{}'::jsonb) ON CONFLICT (id) DO NOTHING;</pre>
                     }
                     this.showKdsModal = false;
                     this.saveState();
+                },
+
+                applyShiftAssignPreset() {
+                    if (this.shiftAssign.preset === 'Nghỉ Phép / Off') {
+                        this.shiftAssign.shift = 'Nghỉ Phép / Off';
+                        return;
+                    }
+                    const map = {
+                        'Ca Sáng': ['06:30', '14:30'],
+                        'Ca Chiều': ['14:30', '22:30'],
+                        'Ca Tối': ['18:00', '23:00'],
+                        'Ca Gãy': ['08:00', '21:00'],
+                        'Full-time': ['08:00', '17:00'],
+                        'Ca Tự Chọn': [this.shiftAssign.startTime || '07:00', this.shiftAssign.endTime || '15:00']
+                    };
+                    const [s, e] = map[this.shiftAssign.preset] || ['06:30', '14:30'];
+                    this.shiftAssign.startTime = s;
+                    this.shiftAssign.endTime = e;
+                    this.syncShiftAssignLabel();
+                },
+
+                syncShiftAssignLabel() {
+                    if (this.shiftAssign.preset === 'Nghỉ Phép / Off') {
+                        this.shiftAssign.shift = 'Nghỉ Phép / Off';
+                        return;
+                    }
+                    this.shiftAssign.shift = `${this.shiftAssign.preset} (${this.shiftAssign.startTime || '06:30'}-${this.shiftAssign.endTime || '14:30'})`;
+                },
+
+                calcHoursBetween(startStr, endStr) {
+                    const parseMins = (t) => {
+                        const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
+                        if (!m) return null;
+                        return Number(m[1]) * 60 + Number(m[2]);
+                    };
+                    const s = parseMins(startStr);
+                    const e = parseMins(endStr);
+                    if (s === null || e === null) return null;
+                    let diff = e - s;
+                    if (diff < 0) diff += 24 * 60; // qua đêm
+                    return Number((diff / 60).toFixed(2));
+                },
+
+                recalcManualAttHours() {
+                    const hrs = this.calcHoursBetween(this.manualAttForm.startTime, this.manualAttForm.endTime);
+                    if (hrs !== null && hrs > 0) {
+                        this.manualAttForm.hours = hrs;
+                    }
+                },
+
+                normalizeTimeInput(val) {
+                    const m = String(val || '').match(/^(\d{1,2}:\d{2}(?::\d{2})?)/);
+                    if (!m) return '';
+                    const parts = m[1].split(':');
+                    parts[0] = parts[0].padStart(2, '0');
+                    return parts.join(':');
+                },
+
+                updateAttendanceTimes(attId, field, newVal) {
+                    const att = this.attendanceLogs.find(a => a.id === attId);
+                    if (!att || !newVal) return;
+                    att[field] = newVal;
+                    if (att.checkIn && att.checkOut) {
+                        const hrs = this.calcHoursBetween(att.checkIn, att.checkOut);
+                        if (hrs !== null && hrs >= 0) {
+                            att.hours = hrs;
+                        }
+                    }
+                    this.recordAuditLog('HR', 'Sửa giờ vào/ra ca', `Cập nhật ${field === 'checkIn' ? 'giờ bắt đầu ca' : 'giờ chốt ca'} của ${att.staffName} (${att.date}) thành ${newVal} (${att.hours} giờ)`);
+                    this.saveState();
+                    this.addToast('Đã Cập Nhật Giờ Ca', `Đã lưu thời gian ca của ${att.staffName} (${att.hours} giờ)!`, 'success');
                 },
 
                 deleteKdsTicket(ticketId) {
